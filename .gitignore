@@ -70,3 +70,19 @@ pip-log.txt
 # Notes de réflexion (discussions, brouillons)
 Reflexion*.txt
 Reflexion*.html
+
+# Fichiers binaires / archives / DB (ne doivent pas être versionnés)
+*.db
+*.zip
+*.xlsx
+*.docx
+*.pdf
+
+# Notes de travail et historiques
+historique_demandes.txt
+tableConvert.md
+à_faire/
+
+# Algorithmes de migration / notes perso
+algorithme_creation_instance_cloud.md
+algorithme_creation_instance_intranet.md
