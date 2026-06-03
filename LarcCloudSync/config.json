@@ -1,0 +1,72 @@
+{
+  "_note": "Fréquences de sync par niveau. Durée en minutes.",
+  "levels": {
+    "0": 1,
+    "1": 5,
+    "2": 60,
+    "3": 1440
+  },
+  "tables": {
+    "larcauth_learnerdp_has_termsubjectdp": 1,
+    "larcauth_learnerpei_has_termsubjectpei": 1,
+    "larcauth_evaluation": 1,
+    "larcauth_learner_has_termsubject": 1,
+    "larcauth_learner_has_termothersubject": 1,
+    "larcauth_student_has_dayevents": 1,
+    "larcauth_termsubject_has_homework": 1,
+    "larcauth_aecuser": 2,
+    "larcauth_classroom_has_timeperiod": 2,
+    "larcauth_classroom_termothersubject": 2,
+    "larcauth_classroom_termsubject": 2,
+    "larcauth_edt_classe": 2,
+    "larcauth_learner_has_subjectgroup": 2,
+    "larcauth_learner_has_term": 2,
+    "larcauth_student": 2,
+    "larcauth_teachadm": 2,
+    "larcauth_academicyear": 3,
+    "larcauth_agenda": 3,
+    "larcauth_campus": 3,
+    "larcauth_classroom": 3,
+    "larcauth_concept": 3,
+    "larcauth_criteria_of_levelsubject": 3,
+    "larcauth_district": 3,
+    "larcauth_gender": 3,
+    "larcauth_globalcontext": 3,
+    "larcauth_language": 3,
+    "larcauth_level": 3,
+    "larcauth_levelsubject": 3,
+    "larcauth_lieu": 3,
+    "larcauth_natureparentutor": 3,
+    "larcauth_program": 3,
+    "larcauth_subjectgroup": 3,
+    "larcauth_term": 3,
+    "larcauth_timeperiod": 3,
+    "larcauth_type_event": 3,
+    "larcauth_unit": 3
+  },
+  "excluded": [
+    "larcauth_student_has_events",
+    "larcauth_student_has_termevents",
+    "larcauth_student_has_weekevents",
+    "larcauth_unit_period"
+  ],
+  "db": {
+    "intranet": {
+      "host": "192.168.2.90",
+      "port": 5432,
+      "dbname": "NewLarcDB",
+      "user": "postgres",
+      "password": ""
+    },
+    "cloud": {
+      "host": "db.xxxxxxxxxxxx.supabase.co",
+      "port": 6543,
+      "dbname": "postgres",
+      "user": "postgres",
+      "password": ""
+    }
+  },
+  "log_file": "sync_daemon.log",
+  "poll_interval": 30,
+  "_poll_interval_note": "Intervalle en secondes entre deux cycles de vérification"
+}

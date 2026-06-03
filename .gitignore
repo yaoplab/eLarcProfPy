@@ -51,6 +51,7 @@ coverage.xml
 .spyderproject
 .ropeproject
 .claude/
+.obsidian/
 
 # mypy / pytype / pyre
 .mypy_cache/
