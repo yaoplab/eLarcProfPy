@@ -1,6 +1,6 @@
 # eLarcProfPy — Contexte projet
 
-_Dernière mise à jour : 2 juin 2026_
+_Dernière mise à jour : 3 juin 2026_
 
 ## Règle importante — Décisions avant actions
 Quand je demande "qu'est-ce que tu penses ?" à propos d'une approche ou d'une solution,
@@ -40,13 +40,22 @@ eLarcProfPy/
 │   ├── database.py         # Database class, db (global singleton)
 │   ├── auth.py             # AuthManager + OAuth2Manager (PKCE Google)
 │   ├── sqlite_init.py      # SQLiteInit, DDL, save_session, curseurs sync
+│   ├── sync.py             # SyncManager (diff shadow-table device ↔ serveur)
+│   ├── theme.py            # ThemeManager (palette + font scaling)
+│   ├── grid_config.py      # GridConfig loader (grid_configs/*.json)
 │   └── logger.py           # log() vers elarc.log + bascule LOG_TO_FILE
 ├── views/
 │   ├── login.py            # LoginWindow — 4 onglets auth + workers QThread
 │   ├── password.py         # ChangePinDialog + ChangePasswordDialog
-│   ├── main_window.py      # MainWindow — espace de travail prof
+│   ├── main_window.py      # MainWindow — espace de travail prof (top bar + grille)
 │   ├── evaluation_panel.py # (obsolète, remplacé par la top bar)
 │   └── eval_manager.py     # _SlotBar, EvalManagerWindow
+├── grid_configs/
+│   └── pei.json            # Configuration grille PEI (couleurs, largeurs)
+├── LarcCloudSync/          # Daemon de sync Intranet ↔ Cloud (projet séparé)
+│   ├── sync_agent/         # Agent Python (boucle, diff, push/pull)
+│   ├── sql/                # Scripts SQL (colonnes sync + triggers)
+│   └── config.json          # Fréquences de sync par table
 ├── export_to_sqlite.py     # Export PostgreSQL → SQLite (utilitaire)
 └── docs/                   # Documentation algorithmique numérotée
 ```
@@ -367,19 +376,28 @@ Toute cette logique vit côté device. Le daemon Python qui synchronise intranet
 
 ## Règles métier importantes
 - **Ne jamais DELETE** — désactivation logique via `enabled = FALSE`
-- **Avant tout UPDATE serveur** : `SET LOCAL app.sync_source = 'intranet'` + `SET LOCAL app.modified_by = <user_id>`
 - **Trimestres passés en lecture seule** — la synchro ne touche que `term_id = trimestre_courant`
 - **Démarrage = test de présence réseau seulement**, pas de connexion auto
-- Le daemon Python de sync intranet ↔ cloud tourne séparément — **ne jamais le modifier**
+- Le daemon Python de sync intranet ↔ cloud tourne séparément — projet `LarcCloudSync/`
 - Schéma PostgreSQL de référence : `C:\Projets\eLarcProf\Data\LarcNewCloud.sql`
 - Tables clés auth : `larcauth_aecuser`, `larcauth_teachadm`, `larcib_term`
-- Tables sync serveur : `sync_log`, `sync_table_config`
-- Tables sync device : tables métier × 2 (avec `_ref`) + `sync_state`
 
-## Synchronisation Double Verrou
-Chaque table a `sync_revision` (bigint, auto-incrémenté par trigger).
-Les modifs sont loggées dans `sync_log`. Un daemon Python synchronise intranet ↔ Supabase.
-Ne jamais toucher au daemon. Toujours poser `SET LOCAL app.sync_source` avant un UPDATE.
+## Synchronisation — Nouveau système (3 juin 2026)
+
+Chaque table métier a :
+- `sync_version INT DEFAULT 0` — version incrémentée à chaque UPDATE
+- `sync_listeMAJ JSONB DEFAULT '[]'::jsonb` — historique des 50 dernières modifs
+
+Trigger `track_sync_update()` (BEFORE UPDATE) :
+- Calcule les colonnes modifiées (diff NEW vs OLD)
+- Incrémente `sync_version`
+- Ajoute `{v, user, at, src, fields}` dans `sync_listeMAJ`
+- Limite à 50 entrées (archivage)
+
+Daemon `LarcCloudSync` :
+- Compare `sync_version` entre Intranet et Cloud
+- Celui avec la version la plus élevée est source → destination
+- Lecture par niveau de table (config `config.json`) : N0=1min, N1=5min, N2=1h, N3=1j
 
 ## Changements récents (1er juin 2026)
 
@@ -443,7 +461,37 @@ Ne jamais toucher au daemon. Toujours poser `SET LOCAL app.sync_source` avant un
 - Bouton **Synchroniser** branché sur `sync.pull_push()`.
 - Bouton **Enregistrer et quitter** : sauvegarde grille → sync → fermeture.
 
+## Changements récents (3 juin 2026)
+
+### 1. Projet LarcCloudSync — Daemon de synchronisation Intranet ↔ Cloud
+- Nouveau dossier `LarcCloudSync/` avec architecture complète.
+- `sync_agent/main.py` : boucle principale avec polling par niveau (N0=1min, N1=5min, N2=1h, N3=1j).
+- `sync_agent/sync.py` : `fetch_versions()` + `resolve()` (gagnant = version la plus élevée → push vers perdant).
+- `sync_agent/db.py` : connexions PostgreSQL Intranet + Supabase, query builders.
+- `sync_agent/config.py` : configuration chargée depuis `config.json`.
+- `sync_agent/logger.py` : logging structuré vers fichier + rotation.
+
+### 2. Scripts SQL de synchronisation
+- `sql/01_add_sync_columns.sql` : `ALTER TABLE` ajoute `sync_version INT DEFAULT 0` et `sync_listeMAJ JSONB DEFAULT '[]'::jsonb` sur toutes les tables.
+- `sql/02_create_triggers.sql` : fonction `track_sync_update()` (BEFORE UPDATE) qui incrémente `sync_version`, calcule le diff NEW vs OLD, et append `{v, user, at, src, fields}` dans `sync_listeMAJ`. Limite à 50 entrées.
+
+### 3. Classification des 40 tables en 4 niveaux de synchronisation
+- N0 (1min) : `larcauth_evaluation`, tables de notes PEI/DP, `session_cache`
+- N1 (5min) : `larcauth_aecuser`, `larcauth_teachadm`, tables d'inscription
+- N2 (1h) : `larcauth_criteria_of_levelsubject`, `larcib_subject`, tables de configuration
+- N3 (1j) : `student_has_events`, logs, tables historiques
+
+### 4. Conflit simplifié
+- Admin gagne toujours (PULL forcé côté prof).
+- Prof notifié via `sync_listeMAJ` (champ `src` côté admin = `'admin'`).
+- Pas de conflit entre profs : pas de chevauchement de données par conception.
+
+### 5. Remote GitHub migré
+- `origin` changé de `github.com/larcspace/eLarcProfPy` → `github.com/yaoplab/eLarcProfPy`.
+- Commit `559ab9c` : "Daemon LarcCloudSync : structure + classification tables + colonnes sync + triggers".
+- `.obsidian/` ajouté à `.gitignore`.
+
 ## État GitHub
-- Repo : `github.com/larcspace/eLarcProfPy`
+- Repo : `github.com/yaoplab/eLarcProfPy`
 - Branche : `main`
-- Dernier commit : `f7fdf90` — Phase 1, 13 mai 2026 (boutons password/PIN, indicateur état bas, correction auth Intranet, base unique elarc.db).
+- Dernier commit : `559ab9c` — Daemon LarcCloudSync : structure + classification tables + colonnes sync + triggers (3 juin 2026)

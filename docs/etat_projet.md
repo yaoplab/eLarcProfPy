@@ -1,10 +1,10 @@
 # État du Projet — eLarcProfPy
 
-_Audit du 2 juin 2026 — Dernière mise à jour : 2 juin 2026_
+_Audit du 3 juin 2026 — Dernière mise à jour : 3 juin 2026_
 
 ## 1. Verdict Global
 
-Phase 2 opérationnelle : top bar refactorée avec slots actifs uniquement, grille élèves × notes avec données réelles, édition par double-clic et sauvegarde en SQLite. SyncManager implémenté et branché.
+Phase 2 opérationnelle : top bar refactorée avec slots actifs uniquement, grille élèves × notes avec données réelles, édition par double-clic et sauvegarde en SQLite. SyncManager implémenté et branché. Daemon LarcCloudSync créé (Intranet ↔ Cloud).
 
 ## 2. Phase 1 — Connexion (✅ TERMINÉE)
 
@@ -56,18 +56,21 @@ Phase 2 opérationnelle : top bar refactorée avec slots actifs uniquement, gril
 - Solution : message en barre d'état → relancer `--mode4`
 
 ## 5. Reste à Faire (Priorité)
-1. Validation des notes (0-8 PEI / 0-20 DP)
-2. Jeu de test pour données T3
-3. Dashboard par rôle (PROF, COORD, SECR, ADMIN)
-4. Test sur données réelles T1/T2
+1. Appliquer les scripts SQL `01_add_sync_columns.sql` + `02_create_triggers.sql` sur Intranet et Cloud
+2. Aligner `common/sync.py` (device) sur le système `sync_listeMAJ` (actuellement en shadow-tables)
+3. Validation des notes (0-8 PEI / 0-20 DP)
+4. Jeu de test pour données T3
+5. Dashboard par rôle (PROF, COORD, SECR, ADMIN)
+6. Test sur données réelles T1/T2
 
 ## 6. Documentation
-- `CONTEXT.md` — à jour (2 juin)
+- `CONTEXT.md` — à jour (3 juin)
 - `docs/etat_projet.md` — à jour
-- `docs/16_main_window.md` — réécrit (nouveau layout top bar)
-- `docs/historique_construction.md` — itérations 18-19 ajoutées
+- `docs/16_main_window.md` — réécrit (layout top bar)
+- `docs/historique_construction.md` — itérations 18-20 ajoutées
 - `docs/README.md` — index à jour
+- `docs/20_eval_manager.md` — documentation EvalManagerWindow
 
 ---
 
-_Mémoire persistante eLarcProfPy — 2 juin 2026_
+_Mémoire persistante eLarcProfPy — 3 juin 2026_

@@ -87,6 +87,8 @@ class MainWindow(QMainWindow):
         self._last_clicked_s: int | None = None
         self._show_jgt_comment: bool = False
         self._visible_crits: dict[str, bool] = {'a': True, 'b': True, 'c': True, 'd': True}
+        self._grille:         QTableWidget | None = None
+        self._frozen_table:   QTableWidget | None = None
         self._row_ids: dict[int, int] = {}  # student_id → learner table row id
         self._dirty_cells: dict[tuple[int, str], str] = {}  # (student_id, col_db_name) → new value
         self._current_table: str = ''
@@ -119,14 +121,14 @@ class MainWindow(QMainWindow):
         self._top_bar = self._build_top_bar()
         layout.addWidget(self._top_bar)
 
-        # Workspace (grille + actions) — masqué jusqu'à sélection
+        # Workspace (grille + actions) — toujours en layout, vide si pas de sélection
         self._workspace_widget = QWidget()
+        self._workspace_widget.setMinimumHeight(200)
         ws_layout = QVBoxLayout(self._workspace_widget)
         ws_layout.setContentsMargins(0, 0, 0, 0)
         ws_layout.setSpacing(4)
         ws_layout.addWidget(self._build_students_grid(), 1)
         ws_layout.addWidget(self._build_actions_bar())
-        self._workspace_widget.hide()
         layout.addWidget(self._workspace_widget, 1)
 
         self.setStatusBar(QStatusBar())
@@ -456,16 +458,40 @@ class MainWindow(QMainWindow):
         return theme_manager.btn_toggle_style(checked, height=22)
 
     def _build_students_grid(self) -> QWidget:
+        container = QWidget()
+        h = QHBoxLayout(container)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(0)
+
+        # Table gelée (colonne élève)
+        self._frozen_table = QTableWidget()
+        self._frozen_table.setColumnCount(0)
+        self._frozen_table.verticalHeader().setVisible(False)
+        self._frozen_table.horizontalHeader().setVisible(False)
+        self._frozen_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self._frozen_table.setFocusPolicy(Qt.NoFocus)
+        self._frozen_table.setSelectionMode(QTableWidget.NoSelection)
+
+        # Grille principale (données)
         self._grille = QTableWidget()
         self._grille.setAlternatingRowColors(True)
         self._grille.setSelectionBehavior(QTableWidget.SelectRows)
         self._grille.setEditTriggers(QTableWidget.DoubleClicked)
         self._grille.verticalHeader().setVisible(False)
-        self._grille.setColumnCount(1)
-        self._grille.setHorizontalHeaderLabels(['Élève'])
-        self._grille.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self._grille.cellChanged.connect(self._on_cell_changed)
-        return self._grille
+
+        h.addWidget(self._frozen_table)
+        h.addWidget(self._grille, 1)
+
+        # Synchronisation du scroll vertical
+        self._frozen_table.verticalScrollBar().valueChanged.connect(
+            self._grille.verticalScrollBar().setValue
+        )
+        self._grille.verticalScrollBar().valueChanged.connect(
+            self._frozen_table.verticalScrollBar().setValue
+        )
+
+        return container
 
     def _build_actions_bar(self) -> QWidget:
         bar = QFrame()
@@ -686,8 +712,8 @@ class MainWindow(QMainWindow):
         """Item Matière-Classe sélectionné → charge évaluations + grille."""
         class_id = self._items_combo.itemData(idx) if idx >= 0 else None
         if class_id is None:
-            self._workspace_widget.hide()
             self._clear_top_bar()
+            self._clear_grille()
             self.statusBar().showMessage(
                 f'{len(self._items)} matière(s)-classe(s) · sélectionnez un item'
             )
@@ -699,7 +725,7 @@ class MainWindow(QMainWindow):
                 item = i
                 break
         if item is None:
-            self._workspace_widget.hide()
+            self._clear_grille()
             return
 
         ts_id = item['termsubject_id']
@@ -727,7 +753,6 @@ class MainWindow(QMainWindow):
                 break
         self._update_top_bar()
 
-        self._workspace_widget.show()
         self._fill_grille(item, cycle, eleves)
         self.statusBar().showMessage(
             f'{label} · {cycle} · {len(eleves)} élève(s)'
@@ -1007,6 +1032,18 @@ class MainWindow(QMainWindow):
         self._update_top_bar()
         self._fill_grille(item, cycle, eleves)
 
+    def _clear_grille(self):
+        """Vide les deux tables tout en gardant le layout."""
+        if self._frozen_table is not None:
+            self._frozen_table.setRowCount(0)
+            self._frozen_table.setColumnCount(0)
+        if self._grille is not None:
+            self._grille.setRowCount(0)
+            self._grille.setColumnCount(0)
+        self._visible_f.clear()
+        self._visible_s.clear()
+        self._current_item = None
+
     def _fill_grille(self, item: dict, cycle: str, eleves: list[dict]) -> None:
         """Remplit la grille élèves × notes avec les colonnes sélectionnées."""
         if self._grille is None:
@@ -1061,8 +1098,8 @@ class MainWindow(QMainWindow):
 
         existing_visible = [c for c in visible_db_cols if c in existing_db_cols]
 
-        # --- 3. Noms d'affichage ---
-        display_names = ['Élève']
+        # --- 3. Noms d'affichage (sans la colonne élève — elle est dans frozen_table) ---
+        display_names = []
         for c in existing_visible:
             if c.startswith('f') and '_note_' in c:
                 parts = c.split('_')
@@ -1081,17 +1118,20 @@ class MainWindow(QMainWindow):
             else:
                 display_names.append(c)
 
-        cols = display_names
-        self._grille.setColumnCount(len(cols))
-        self._grille.setHorizontalHeaderLabels(cols)
-        self._grille.setRowCount(len(eleves))
+        # Configurer les deux tables
+        self._frozen_table.setColumnCount(1)
+        self._frozen_table.setHorizontalHeaderLabels(['Élève'])
+        self._grille.setColumnCount(len(display_names))
+        self._grille.setHorizontalHeaderLabels(display_names)
+        row_count = len(eleves)
+        self._frozen_table.setRowCount(row_count)
+        self._grille.setRowCount(row_count)
 
         # --- 4. Charger les notes — scoped par CTS, matchées par fk_student_id ---
         ts_id = item['termsubject_id']
         notes: dict[int, dict[str, str]] = {}
         self._row_ids: dict[int, int] = {}
         if existing_visible:
-            # Vérifier si fk_student_id existe dans la table (base seedée après le 2 juin 2026)
             has_fk = False
             try:
                 cur = conn.execute(f'PRAGMA table_info("{table}")')
@@ -1122,22 +1162,23 @@ class MainWindow(QMainWindow):
                 except Exception as e:
                     print(f"Erreur chargement notes: {e}")
             else:
-                # Base ancienne (sans fk_student_id) — on charge mais sans matching
                 self.statusBar().showMessage(
                     'Données ancienne génération — relancez --mode4 pour les notes'
                 )
 
-        # --- 5. Remplir ---
+        # --- 5. Remplir les deux tables ---
         for row_idx, eleve in enumerate(eleves):
+            # Table gelée — nom élève
             item_eleve = QTableWidgetItem(f"{eleve['nom']} {eleve['prenom']}")
             item_eleve.setFlags(item_eleve.flags() & ~Qt.ItemIsEditable)
-            self._grille.setItem(row_idx, 0, item_eleve)
+            self._frozen_table.setItem(row_idx, 0, item_eleve)
 
+            # Grille principale — notes
             eleve_notes = notes.get(eleve['id'], {})
             for ci, db_name in enumerate(existing_visible):
                 val = eleve_notes.get(db_name, '')
                 item = QTableWidgetItem(str(val))
-                self._grille.setItem(row_idx, ci + 1, item)
+                self._grille.setItem(row_idx, ci, item)
 
                 # Colorier la cellule selon la note
                 is_synth = (db_name == synth_display)
@@ -1166,25 +1207,22 @@ class MainWindow(QMainWindow):
 
         # --- 6. Largeurs de colonnes ---
         if pei_config:
-            self._grille.setColumnWidth(0, pei_config.student_width)
+            self._frozen_table.setColumnWidth(0, pei_config.student_width)
             for ci, db_name in enumerate(existing_visible):
-                col_idx = ci + 1
                 is_obs = '_observation' in db_name or db_name == 'term_observation'
                 if is_obs:
-                    self._grille.setColumnWidth(col_idx, pei_config.remark_width)
+                    self._grille.setColumnWidth(ci, pei_config.remark_width)
                 else:
-                    self._grille.setColumnWidth(col_idx, pei_config.note_width)
+                    self._grille.setColumnWidth(ci, pei_config.note_width)
 
         self._grille.cellChanged.disconnect()
-        # Stocker pour la sauvegarde
+        # Stocker pour la sauvegarde (sans colonne élève)
         self._current_table = table
-        self._current_col_names = ['Élève'] + existing_visible
+        self._current_col_names = existing_visible
         self._current_student_ids = [e['id'] for e in eleves]
         self._grille.cellChanged.connect(self._on_cell_changed)
 
     def _on_cell_changed(self, row: int, col: int) -> None:
-        if col == 0:
-            return
         if row < 0 or row >= len(self._current_student_ids):
             return
         if col < 0 or col >= len(self._current_col_names):
@@ -1227,13 +1265,13 @@ class MainWindow(QMainWindow):
         """Item Autre Matière-Classe sélectionné."""
         termother_id = self._items_other_combo.itemData(idx) if idx >= 0 else None
         if termother_id is None:
-            self._workspace_widget.show()
+            self._clear_grille()
             self.statusBar().showMessage(
                 f'{len(self._items)} matière(s)-classe(s)'
             )
             return
 
-        self._workspace_widget.hide()
+        self._clear_grille()
         item = None
         for i in self._items_other:
             if i['termothersubject_id'] == termother_id:

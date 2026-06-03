@@ -25,7 +25,7 @@ Ce dossier contient la description détaillée de l'algorithme global du program
 - `19_evaluation_panel.md` – panneaux d'évaluations F/S (obsolète depuis la top bar)
 - `20_eval_manager.md` – fenêtre de gestion complète des évaluations
 - `etat_projet.md` – **état du projet à jour**
-- `historique_construction.md` – **journal chronologique complet, itérations 1 à 19**
+- `historique_construction.md` – **journal chronologique complet, itérations 1 à 20**
 
 ## Utilisation
 

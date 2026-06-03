@@ -1095,7 +1095,47 @@ JOIN public.larcauth_learner_has_termsubject lht ON ...
 
 ---
 
-## Annexe D — Organisation des fichiers (2 juin 2026)
+## Itération 20 — Daemon LarcCloudSync (3 juin 2026)
+
+### Objectif
+Créer un daemon de synchronisation autonome entre PostgreSQL Intranet et Supabase Cloud, distinct de l'application desktop eLarcProfPy.
+
+### Décisions clés
+- **`sync_listeMAJ JSONB`** remplace les 3 colonnes (`sync_version`, `sync_aecuser`, `sync_date`) + table `sync_log`. Chaque enregistrement porte son propre historique (50 entrées max).
+- **Trigger BEFORE UPDATE** : `track_sync_update()` calcule le diff NEW vs OLD, incrémente `sync_version`, append `{v, user, at, src, fields}`.
+- **Conflit simplifié** : ADMIN gagne toujours (PULL forcé côté prof). Pas de conflit entre profs par conception.
+- **Fréquences par niveau** : N0=1min, N1=5min, N2=1h, N3=1j.
+- **Agent monoprocess** : boucle `while True` avec `time.sleep()` par niveau, pas de threading.
+
+### Fichiers créés
+```
+LarcCloudSync/
+├── config.json                        # Connexions + fréquences par table
+├── requirements.txt                   # psycopg2-binary, python-dotenv
+├── sql/
+│   ├── 01_add_sync_columns.sql        # ALTER TABLE sync_version + sync_listeMAJ
+│   └── 02_create_triggers.sql         # FUNCTION + TRIGGER track_sync_update
+├── sync_agent/
+│   ├── __init__.py
+│   ├── main.py                # Boucle principale N0..N3
+│   ├── sync.py                # fetch_versions, resolve (push winner → loser)
+│   ├── db.py                  # Query builders PostgreSQL
+│   ├── config.py              # Chargement config.json
+│   └── logger.py              # Logging structuré avec rotation
+└── 01_Architecture/
+    └── 02_TABLE_CLASSIFICATION.md # 40 tables classées N0-N3
+```
+
+### Changements transverses
+- `.gitignore` : ajout de `.obsidian/` (notes personnelles).
+
+### Impact sur l'application desktop
+- `common/sync.py` (SyncManager device) **inchangé** pour l'instant — utilise toujours le pattern shadow-table (`_ref`). Une future itération pourra aligner device sur le même système `sync_listeMAJ`.
+- Les scripts SQL doivent être appliqués manuellement sur Intranet et Cloud avant la mise en route du daemon.
+
+---
+
+## Annexe D — Organisation des fichiers (3 juin 2026)
 
 ```
 eLarcProfPy/
@@ -1107,6 +1147,8 @@ eLarcProfPy/
 │   ├── session.py          # UserRole, ConnMode, Session (singleton session)
 │   ├── sqlite_init.py      # SQLiteInit (DDL, seed, session, module_config)
 │   ├── sync.py             # SyncManager (diff, pull, push, conflict)
+│   ├── theme.py            # ThemeManager (palette + font scaling)
+│   ├── grid_config.py      # GridConfig loader (grid_configs/*.json)
 │   └── logger.py           # log()
 ├── views/
 │   ├── login.py            # LoginWindow (4 onglets)
@@ -1114,6 +1156,12 @@ eLarcProfPy/
 │   ├── main_window.py      # MainWindow (top bar + grille)
 │   ├── eval_manager.py     # _SlotBar, EvalManagerWindow
 │   └── evaluation_panel.py # Obsolète (non importé par main_window)
+├── grid_configs/
+│   └── pei.json            # Configuration grille PEI
+├── LarcCloudSync/          # Daemon sync Intranet ↔ Cloud
+│   ├── sync_agent/         # Agent Python (boucle, diff, push/pull)
+│   ├── sql/                # Scripts SQL (colonnes sync + triggers)
+│   └── config.json         # Fréquences de sync par table
 ├── export_to_sqlite.py     # Export PostgreSQL → SQLite
 └── docs/                   # Documentation algorithmique
 ```
