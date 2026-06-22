@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from functools import partial
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QColor, QAction
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QFont, QColor, QAction, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -32,6 +32,102 @@ from common.session import session
 from common.theme import theme_manager
 from common.grid_config import pei_config
 from views.eval_manager import EvalManagerWindow
+
+
+class ClipboardTable(QTableWidget):
+    """QTableWidget avec support Ctrl+C / Ctrl+V (formats Excel)."""
+
+    def keyPressEvent(self, event):
+        if event.matches(QKeySequence.Copy):
+            self._copy_selection()
+            return
+        if event.matches(QKeySequence.Paste):
+            self._paste_clipboard()
+            return
+        super().keyPressEvent(event)
+
+    def _copy_selection(self) -> None:
+        rows = sorted(set(item.row() for item in self.selectedItems()))
+        cols = sorted(set(item.column() for item in self.selectedItems()))
+        if not rows or not cols:
+            return
+        col_range = range(cols[0], cols[-1] + 1)
+        lines = []
+        for r in rows:
+            cells = []
+            for c in col_range:
+                it = self.item(r, c)
+                cells.append(it.text() if it else '')
+            lines.append('\t'.join(cells))
+        QApplication.clipboard().setText('\n'.join(lines))
+
+    def _paste_clipboard(self) -> None:
+        text = QApplication.clipboard().text()
+        if not text.strip():
+            return
+        lines = text.split('\n')
+        rows_data = [line.split('\t') for line in lines if line.strip()]
+        if not rows_data:
+            return
+        cur_row = self.currentRow()
+        cur_col = self.currentColumn()
+        parent = self.window()
+
+        has_dp = getattr(parent, '_current_table', '').endswith('dp')
+        max_val = 20 if has_dp else 8
+
+        self.blockSignals(True)
+        errors = []
+        paste_count = 0
+        for ri, row_cells in enumerate(rows_data):
+            for ci, val in enumerate(row_cells):
+                r = cur_row + ri
+                c = cur_col + ci
+                if r >= self.rowCount() or c >= self.columnCount():
+                    continue
+                val = val.strip()
+                item = self.item(r, c)
+                if item is None:
+                    item = QTableWidgetItem()
+                    self.setItem(r, c, item)
+                item.setText(val)
+                paste_count += 1
+
+                if val:
+                    try:
+                        f = float(val)
+                        if f < 0 or f > max_val:
+                            errors.append(f"L{ri+1}C{ci+1} ({f}) hors {0}-{max_val}")
+                    except ValueError:
+                        pass
+
+        self.blockSignals(False)
+
+        from functools import partial
+        for ri, row_cells in enumerate(rows_data):
+            for ci in range(len(row_cells)):
+                r = cur_row + ri
+                c = cur_col + ci
+                if r >= self.rowCount() or c >= self.columnCount():
+                    continue
+                QTimer.singleShot(0, partial(self._mark_dirty, r, c))
+
+        if errors:
+            QApplication.beep()
+            parent.statusBar().showMessage(
+                f"Collé — {paste_count} cellules, {len(errors)} hors plage: "
+                f"{', '.join(errors[:5])}", 10000
+            )
+        else:
+            parent.statusBar().showMessage(
+                f"Collé — {paste_count} cellule(s)"
+            )
+
+    def _mark_dirty(self, row: int, col: int) -> None:
+        parent = self.window()
+        if not hasattr(parent, '_on_cell_changed'):
+            return
+        parent._on_cell_changed(row, col)
 
 
 class MainWindow(QMainWindow):
@@ -473,9 +569,10 @@ class MainWindow(QMainWindow):
         self._frozen_table.setSelectionMode(QTableWidget.NoSelection)
 
         # Grille principale (données)
-        self._grille = QTableWidget()
+        self._grille = ClipboardTable()
         self._grille.setAlternatingRowColors(True)
-        self._grille.setSelectionBehavior(QTableWidget.SelectRows)
+        self._grille.setSelectionBehavior(QTableWidget.SelectItems)
+        self._grille.setSelectionMode(QTableWidget.ContiguousSelection)
         self._grille.setEditTriggers(QTableWidget.DoubleClicked)
         self._grille.verticalHeader().setVisible(False)
         self._grille.cellChanged.connect(self._on_cell_changed)

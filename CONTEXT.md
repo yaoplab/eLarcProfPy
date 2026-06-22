@@ -1,6 +1,6 @@
 # eLarcProfPy — Contexte projet
 
-_Dernière mise à jour : 3 juin 2026_
+_Dernière mise à jour : 23 juin 2026_
 
 ## Règle importante — Décisions avant actions
 Quand je demande "qu'est-ce que tu penses ?" à propos d'une approche ou d'une solution,
@@ -495,3 +495,19 @@ Daemon `LarcCloudSync` :
 - Repo : `github.com/yaoplab/eLarcProfPy`
 - Branche : `main`
 - Dernier commit : `559ab9c` — Daemon LarcCloudSync : structure + classification tables + colonnes sync + triggers (3 juin 2026)
+
+## Notes pour le 23 juin (prochaine session)
+
+### 1. Migration LarcCommon — débutée
+- `common/logger.py` et `common/network.py` remplacés par des shims vers `larccommon`
+- LarcCommon installé dans le venv (`.venv`)
+- Prochains modules à migrer : `session.py`, `database.py`, `auth.py`, `theme.py` (difficulté croissante)
+
+### 2. Liste des absents par classe — à placer
+- Trouver un emplacement dans le dashboard pour une **liste des absents par classe**
+- Idem : quand on clique sur une classe, afficher une **liste claire des absents**
+
+### 3. Stats absences cassées
+- Les types d'absence ont changé (nouveaux codes hiérarchiques : `Absence > Maladie`, `Absence > Accident`, etc.)
+- Les requêtes de stats utilisent des `ILIKE` sur les anciens mots-clés (`absence`, `Suivi > Absence%`) — elles ne matchent plus les nouveaux codes
+- **Correction nécessaire** : ajouter `'Absence%'` dans les patterns ILIKE des requêtes de stats
