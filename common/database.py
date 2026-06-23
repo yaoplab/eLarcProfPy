@@ -10,23 +10,25 @@ try:
 except ImportError:
     _PG_OK = False
 
+try:
+    from larccommon.config_loader import find_cfg
+except ImportError:
+    from .logger import log as _log
+    def find_cfg() -> str:
+        here = os.path.dirname(os.path.abspath(__file__))
+        candidates = [
+            os.path.join(here, '..', 'config.ini'),
+            os.path.join(here, '..', '..', 'eLarcProf', 'config.ini'),
+        ]
+        for p in candidates:
+            p = os.path.normpath(p)
+            if os.path.isfile(p):
+                return p
+        _log("AVERTISSEMENT : config.ini introuvable. Utilisation des valeurs par défaut.")
+        print("AVERTISSEMENT : config.ini introuvable. Utilisation des valeurs par défaut.")
+        return os.path.normpath(candidates[0])
 
 from .logger import log as _log
-
-def _find_cfg() -> str:
-    here = os.path.dirname(os.path.abspath(__file__))
-    candidates = [
-        os.path.join(here, '..', 'config.ini'),
-        os.path.join(here, '..', '..', 'eLarcProf', 'config.ini'),
-    ]
-    for p in candidates:
-        p = os.path.normpath(p)
-        if os.path.isfile(p):
-            return p
-    # Aucun fichier trouvé, retourner le premier candidat (qui n'existe pas)
-    _log("AVERTISSEMENT : config.ini introuvable. Utilisation des valeurs par défaut.")
-    print("AVERTISSEMENT : config.ini introuvable. Utilisation des valeurs par défaut.")
-    return os.path.normpath(candidates[0])
 
 
 class DBMode(Enum):
@@ -42,12 +44,11 @@ class Database:
         self._cloud:    Optional[object] = None
         self._sqlite:   Optional[sqlite3.Connection] = None
         self._mode = DBMode.NONE
-        self._server_mode = DBMode.NONE  # suit la connexion serveur (indépendant de SQLite)
+        self._server_mode = DBMode.NONE
 
     def _pg_params(self, section: str) -> dict:
         cfg = configparser.ConfigParser()
-        cfg.read(_find_cfg())
-        # Pour la section IntranetDatabase, utiliser NewLarcDB comme base par défaut
+        cfg.read(find_cfg())
         default_db = 'NewLarcDB' if section == 'IntranetDatabase' else 'postgres'
         return {
             'host':             cfg.get(section, 'Host', fallback='127.0.0.1'),
@@ -62,27 +63,19 @@ class Database:
     def connect_intranet(self) -> bool:
         if not _PG_OK:
             _log("connect_intranet: psycopg2 non installé")
-            print("connect_intranet: psycopg2 non installé")
             return False
         try:
             if self._intranet:
                 self._intranet.close()
             params = self._pg_params('IntranetDatabase')
-            msg = (f"connect_intranet: tentative de connexion à {params['host']}:{params['port']}/{params['dbname']} "
-                   f"utilisateur={params['user']}")
-            _log(msg)
-            print(msg)
             self._intranet = psycopg2.connect(**params)
             self._intranet.autocommit = True
             self._mode = DBMode.INTRANET
             self._server_mode = DBMode.INTRANET
             _log("connect_intranet: connexion réussie")
-            print("connect_intranet: connexion réussie")
             return True
         except Exception as e:
-            msg = f"connect_intranet: échec : {e}"
-            _log(msg)
-            print(msg)
+            _log(f"connect_intranet: échec : {e}")
             self._mode = DBMode.NONE
             self._server_mode = DBMode.NONE
             return False
@@ -90,27 +83,20 @@ class Database:
     def connect_cloud(self) -> bool:
         if not _PG_OK:
             _log("connect_cloud: psycopg2 non installé")
-            print("connect_cloud: psycopg2 non installé")
             return False
         try:
             if self._cloud:
                 self._cloud.close()
             params = self._pg_params('SupabaseDatabase')
-            msg = (f"connect_cloud: tentative de connexion à {params['host']}:{params['port']}/{params['dbname']} "
-                   f"utilisateur={params['user']}")
-            _log(msg)
-            print(msg)
+            params['sslmode'] = 'require'
             self._cloud = psycopg2.connect(**params)
             self._cloud.autocommit = True
             self._mode = DBMode.CLOUD
             self._server_mode = DBMode.CLOUD
             _log("connect_cloud: connexion réussie")
-            print("connect_cloud: connexion réussie")
             return True
         except Exception as e:
-            msg = f"connect_cloud: échec : {e}"
-            _log(msg)
-            print(msg)
+            _log(f"connect_cloud: échec : {e}")
             self._mode = DBMode.NONE
             self._server_mode = DBMode.NONE
             return False
@@ -183,9 +169,7 @@ class Database:
         return self.server_conn is not None
 
     def get_sqlalchemy_url(self, section: str = 'IntranetDatabase') -> str:
-        """Retourne une URL de connexion SQLAlchemy pour la section donnée."""
         params = self._pg_params(section)
-        # Format : postgresql+psycopg2://user:password@host:port/dbname
         return (f"postgresql+psycopg2://{params['user']}:{params['password']}"
                 f"@{params['host']}:{params['port']}/{params['dbname']}")
 
@@ -194,3 +178,4 @@ class Database:
 
 
 db = Database()
+_find_cfg = find_cfg  # compatibilité
