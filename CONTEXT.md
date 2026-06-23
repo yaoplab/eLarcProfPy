@@ -498,16 +498,31 @@ Daemon `LarcCloudSync` :
 
 ## Notes pour le 23 juin (prochaine session)
 
-### 1. Migration LarcCommon — débutée
-- `common/logger.py` et `common/network.py` remplacés par des shims vers `larccommon`
-- LarcCommon installé dans le venv (`.venv`)
-- Prochains modules à migrer : `session.py`, `database.py`, `auth.py`, `theme.py` (difficulté croissante)
+### 1. Migration LarcCommon — terminée (4 modules)
+- `common/logger.py` ✅ shim vers larccommon
+- `common/network.py` ✅ shim vers larccommon + `network_mode_color()` local
+- `common/session.py` ✅ local avec champs `active_term_*` synchronisés
+- `common/database.py` ✅ local avec `find_cfg()` depuis larccommon, SQLite intact
+- `common/theme.py` ⏭️ gardé local (trop spécifique)
+- `common/auth.py` ⏭️ gardé local (AuthManager inexistant dans LarcCommon)
 
-### 2. Liste des absents par classe — à placer
-- Trouver un emplacement dans le dashboard pour une **liste des absents par classe**
-- Idem : quand on clique sur une classe, afficher une **liste claire des absents**
+### 2. Filtre langue `_load_active_term` — corrigé dans LarcCommon
+- Utilise `academicyear.current_term_number` + filtre `fk_language = 2`
+- eLarcProfPy a sa propre copie de `_load_active_term` dans `auth.py` — à mettre à jour
 
-### 3. Stats absences cassées
-- Les types d'absence ont changé (nouveaux codes hiérarchiques : `Absence > Maladie`, `Absence > Accident`, etc.)
-- Les requêtes de stats utilisent des `ILIKE` sur les anciens mots-clés (`absence`, `Suivi > Absence%`) — elles ne matchent plus les nouveaux codes
-- **Correction nécessaire** : ajouter `'Absence%'` dans les patterns ILIKE des requêtes de stats
+### 3. Stats absences LarcSuperviseur — corrigé
+- `ILIKE 'Absence%'` ajouté dans les 7 requêtes stats
+
+### 4. Liste des absents LarcSuperviseur — ajoutée
+- Vue groupe : sous les KPIs, avant l'historique
+- Vue classe : avant les vignettes élèves
+
+### 5. i18n — POC terminé LarcSuperviseur
+- Système `larccommon/l10n/` : Translator + `fr.json`/`en.json`
+- Variable d'env `LARC_LANG=fr|en`
+- 8 vues traduites (~200 clés)
+
+### 6. TODO : langue préférence en DB
+- Stocker `fk_language` dans `larcauth_aecuser` (per user) + `larcauth_config` (global)
+- Au login : charger la langue depuis la DB, initialiser le Translator
+- Permet de regenerer une instance avec la bonne langue
