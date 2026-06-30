@@ -504,7 +504,7 @@ Daemon `LarcCloudSync` :
 - `common/session.py` ✅ local avec champs `active_term_*` synchronisés
 - `common/database.py` ✅ local avec `find_cfg()` depuis larccommon, SQLite intact
 - `common/theme.py` ⏭️ gardé local (trop spécifique)
-- `common/auth.py` ⏭️ gardé local (AuthManager inexistant dans LarcCommon)
+- `common/auth.py` ✅ shim vers LarcCommon (AuthManager + _deduce_role migrés dans LarcCommon, OAuth2 local gardé pour instance binding)
 
 ### 2. Filtre langue `_load_active_term` — corrigé dans LarcCommon
 - Utilise `academicyear.current_term_number` + filtre `fk_language = 2`
