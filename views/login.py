@@ -2,6 +2,7 @@ import os
 import shutil
 from typing import Optional
 
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QTabWidget, QLabel, QLineEdit, QPushButton, QStatusBar,
@@ -45,47 +46,49 @@ class LoginWindow(QMainWindow):
     @property
     def _STYLE(self) -> str:
         p = theme_manager.theme.palette
+        d = theme_manager.design
+        s = theme_manager.font_size
         return f"""
             QMainWindow  {{ background: {p.background}; }}
             QWidget#root {{ background: {p.background}; }}
             QTabWidget::pane {{
-                border: 1px solid {p.border}; background: {p.surface}; border-radius: 4px;
+                border: 1px solid {p.border}; background: {p.surface}; border-radius: {d.radius}px;
             }}
-            QTabBar::tab          {{ padding: 8px 20px; font-size: 11px; }}
+            QTabBar::tab          {{ padding: {d.btn_pad_v}px {d.btn_pad_h}px; font-size: {s(11)}px; }}
             QTabBar::tab:selected {{
                 background: {p.surface}; border-bottom: 2px solid {p.primary};
                 color: {p.text_strong}; font-weight: bold;
             }}
             QTabBar::tab:!selected {{ background: {p.border_light}; color: {p.text_soft}; }}
             QLineEdit {{
-                padding: 7px 10px; border: 1px solid {p.border};
-                border-radius: 4px; font-size: 12px; background: {p.surface};
+                padding: {d.field_pad_v}px {d.field_pad_h}px; border: 1px solid {p.border};
+                border-radius: {d.radius}px; font-size: {s(12)}px; background: {p.surface};
             }}
             QLineEdit:focus {{ border-color: {p.primary}; }}
             QPushButton {{
-                padding: 9px 20px; border: none; border-radius: 4px;
-                font-size: 12px; font-weight: bold; color: white;
+                padding: {d.btn_pad_v}px {d.btn_pad_h}px; border: none; border-radius: {d.radius}px;
+                font-size: {s(12)}px; font-weight: bold; color: white;
             }}
-            QPushButton#btnIntra  {{ background: {p.button_primary}; padding: 9px 20px; }}
+            QPushButton#btnIntra  {{ background: {p.button_primary}; padding: {d.btn_pad_v}px {d.btn_pad_h}px; }}
             QPushButton#btnIntra:hover  {{ background: {p.primary}; }}
             QPushButton#btnIntra:disabled  {{ background: {p.inactive}; }}
             QPushButton#btnGoogle {{ background: {p.button_danger}; }}
             QPushButton#btnGoogle:hover {{ background: {p.danger}; }}
             QPushButton#btnGoogle:disabled {{ background: {p.inactive}; }}
-            QPushButton#btnPIN    {{ background: {p.button_accent}; padding: 9px 20px; }}
+            QPushButton#btnPIN    {{ background: {p.button_accent}; padding: {d.btn_pad_v}px {d.btn_pad_h}px; }}
             QPushButton#btnPIN:hover    {{ background: {p.accent}; }}
             QPushButton#btnPIN:disabled {{ background: {p.inactive}; }}
             QPushButton#btnCreate {{ background: {p.button_success}; }}
             QPushButton#btnCreate:hover {{ background: {p.success}; }}
             QPushButton#btnCreate:disabled {{ background: {p.inactive}; }}
             QPushButton#btnBrowse {{
-                background: {p.text_soft}; padding: 9px 10px; min-width: 32px;
+                background: {p.text_soft}; padding: {d.btn_pad_v}px {d.field_pad_h}px; min-width: 34px;
             }}
             QPushButton#btnBrowse:hover {{ background: {p.inactive}; }}
-            QLabel#errLabel {{ color: {p.danger}; font-size: 11px; }}
-            QLabel#hdrTitle {{ color: {p.text_strong}; font-size: 22px; font-weight: bold; }}
-            QLabel#hdrSub   {{ color: {p.text_soft}; font-size: 11px; }}
-            QLabel#infoLbl  {{ color: {p.text_secondary}; font-size: 11px; }}
+            QLabel#errLabel {{ color: {p.danger}; font-size: {s(11)}px; }}
+            QLabel#hdrTitle {{ color: {p.text_strong}; font-size: {s(22)}px; font-weight: bold; }}
+            QLabel#hdrSub   {{ color: {p.text_soft}; font-size: {s(11)}px; }}
+            QLabel#infoLbl  {{ color: {p.text_secondary}; font-size: {s(11)}px; }}
         """
 
     def __init__(self):
@@ -105,16 +108,31 @@ class LoginWindow(QMainWindow):
     # ------------------------------------------------------------------
     def _setup_ui(self) -> None:
         self.setWindowTitle('eLarcProf — Connexion')
-        self.setMinimumSize(460, 560)
-        self.resize(460, 600)
+        self.setMinimumSize(377, 610)
+        self.resize(377, 610)
         self.setStyleSheet(self._STYLE)
 
         root = QWidget()
         root.setObjectName('root')
         self.setCentralWidget(root)
         vbox = QVBoxLayout(root)
-        vbox.setContentsMargins(24, 20, 24, 12)
-        vbox.setSpacing(12)
+        vbox.setContentsMargins(21, 21, 21, 13)
+        vbox.setSpacing(13)
+
+        # Logo
+        logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'img', 'logoAEC.png')
+        self._logo_label = QLabel()
+        if os.path.exists(logo_path):
+            pix = QPixmap(logo_path)
+            self._logo_pixmap = pix.scaledToHeight(89, Qt.SmoothTransformation)
+            self._logo_label.setPixmap(self._logo_pixmap)
+        else:
+            self._logo_pixmap = None
+            self._logo_label.setText("[Logo]")
+        self._logo_label.setAlignment(Qt.AlignCenter)
+        self._logo_label.setCursor(Qt.PointingHandCursor)
+        vbox.addWidget(self._logo_label)
+        vbox.addSpacing(21)
 
         # Header
         title = QLabel('eLarcProf')
@@ -124,15 +142,15 @@ class LoginWindow(QMainWindow):
 
         # Indicateurs en haut à droite
         self._intra_indicator = QLabel('Présence intranet ●')
-        self._intra_indicator.setStyleSheet(f'color: {theme_manager.theme.palette.text_strong}; font-size: 12px;')
+        self._intra_indicator.setStyleSheet(f'color: {theme_manager.theme.palette.text_strong}; font-size: {theme_manager.font_size(12)}px;')
         self._cloud_indicator = QLabel('Présence cloud ●')
-        self._cloud_indicator.setStyleSheet(f'color: {theme_manager.theme.palette.text_strong}; font-size: 12px;')
+        self._cloud_indicator.setStyleSheet(f'color: {theme_manager.theme.palette.text_strong}; font-size: {theme_manager.font_size(12)}px;')
 
         header_layout = QHBoxLayout()
         header_layout.addWidget(title)
         header_layout.addStretch()
         header_layout.addWidget(self._intra_indicator)
-        header_layout.addSpacing(16)
+        header_layout.addSpacing(13)
         header_layout.addWidget(self._cloud_indicator)
 
         vbox.addLayout(header_layout)
@@ -156,7 +174,7 @@ class LoginWindow(QMainWindow):
         # Log area
         self._log_area = QPlainTextEdit()
         self._log_area.setReadOnly(True)
-        self._log_area.setMaximumHeight(120)
+        self._log_area.setMaximumHeight(89)
         self._log_area.setPlaceholderText('Messages de progression…')
         self._log_area.hide()
         vbox.addWidget(self._log_area)
@@ -166,7 +184,7 @@ class LoginWindow(QMainWindow):
         self._bottom_indicator.setObjectName('bottomIndicator')
         self._bottom_indicator.setAlignment(Qt.AlignCenter)
         self._bottom_indicator.setStyleSheet(
-            f'color: {theme_manager.theme.palette.text_strong}; font-size: 16px; font-weight: bold;'
+            f'color: {theme_manager.theme.palette.text_strong}; font-size: {theme_manager.font_size(16)}px; font-weight: bold;'
         )
         vbox.addWidget(self._bottom_indicator)
 
@@ -175,9 +193,9 @@ class LoginWindow(QMainWindow):
         self.setStatusBar(sb)
         self._net_txt = QLabel('Détection du réseau')
         self._net_txt.setStyleSheet(f'font-size: 12px; color: {theme_manager.theme.palette.text_soft};')
-        self._net_txt.setContentsMargins(24, 0, 0, 0)
+        self._net_txt.setContentsMargins(21, 0, 0, 0)
         self._dot_lbl = QLabel('●')
-        self._dot_lbl.setStyleSheet(f'color: {theme_manager.theme.palette.inactive}; font-size: 14px;')
+        self._dot_lbl.setStyleSheet(f'color: {theme_manager.theme.palette.inactive}; font-size: {theme_manager.font_size(14)}px;')
         sb.addWidget(self._net_txt)
         sb.addWidget(self._dot_lbl)
 
@@ -186,10 +204,10 @@ class LoginWindow(QMainWindow):
         """Returns (QWidget tab, QFormLayout, outer QVBoxLayout)"""
         tab  = QWidget()
         vbox = QVBoxLayout(tab)
-        vbox.setContentsMargins(20, 20, 20, 20)
-        vbox.setSpacing(10)
+        vbox.setContentsMargins(21, 21, 21, 21)
+        vbox.setSpacing(8)
         form = QFormLayout()
-        form.setSpacing(10)
+        form.setSpacing(13)
         form.setLabelAlignment(Qt.AlignRight)
         return tab, form, vbox
 
@@ -214,7 +232,7 @@ class LoginWindow(QMainWindow):
         self._btn_change_pwd_intra = QPushButton('Changer le mot de passe')
         self._btn_change_pwd_intra.setObjectName('btnChangePwdIntra')
         self._btn_change_pwd_intra.setStyleSheet(
-            'background: #7f8c8d; color: white; padding: 9px 20px; '
+            'background: #7f8c8d; color: white; padding: 8px 20px; '
             'font-size: 11px; border-radius: 3px;'
         )
         self._btn_change_pwd_intra.clicked.connect(self._on_change_password)
@@ -237,7 +255,7 @@ class LoginWindow(QMainWindow):
         info.setWordWrap(True)
         vbox.addStretch()
         vbox.addWidget(info)
-        vbox.addSpacing(16)
+        vbox.addSpacing(13)
 
         self._btn_google = QPushButton('  Connexion avec Google')
         self._btn_google.setObjectName('btnGoogle')
@@ -273,7 +291,7 @@ class LoginWindow(QMainWindow):
         self._btn_change_pin = QPushButton('Changer le code PIN')
         self._btn_change_pin.setObjectName('btnChangePin')
         self._btn_change_pin.setStyleSheet(
-            'background: #7f8c8d; color: white; padding: 9px 20px; '
+            'background: #7f8c8d; color: white; padding: 8px 20px; '
             'font-size: 11px; border-radius: 3px;'
         )
         self._btn_change_pin.clicked.connect(self._on_change_pin)
@@ -303,7 +321,7 @@ class LoginWindow(QMainWindow):
         self._edt_n_dest.setReadOnly(True)
         btn_browse = QPushButton('…')
         btn_browse.setObjectName('btnBrowse')
-        btn_browse.setFixedWidth(36)
+        btn_browse.setFixedWidth(34)
         btn_browse.clicked.connect(self._browse_dest)
 
         dest_row = QHBoxLayout()
@@ -381,7 +399,7 @@ class LoginWindow(QMainWindow):
             mode = NetworkMode.OFFLINE
         self._net_mode = mode
         color = network_mode_color(mode)
-        self._dot_lbl.setStyleSheet(f'color: {color}; font-size: 14px;')
+        self._dot_lbl.setStyleSheet(f'color: {color}; font-size: {theme_manager.font_size(14)}px;')
         labels = {
             NetworkMode.INTRANET: 'Intranet',
             NetworkMode.INTERNET: 'Internet',
@@ -428,8 +446,8 @@ class LoginWindow(QMainWindow):
         """Met à jour les feux Intranet et Cloud."""
         intra_color = '#27ae60' if intranet else '#2c3e50'
         cloud_color = '#27ae60' if cloud else '#2c3e50'
-        self._intra_indicator.setStyleSheet(f'color: {intra_color}; font-size: 12px;')
-        self._cloud_indicator.setStyleSheet(f'color: {cloud_color}; font-size: 12px;')
+        self._intra_indicator.setStyleSheet(f'color: {intra_color}; font-size: {theme_manager.font_size(12)}px;')
+        self._cloud_indicator.setStyleSheet(f'color: {cloud_color}; font-size: {theme_manager.font_size(12)}px;')
 
     def _on_change_password(self) -> None:
         """Ouvre la boîte de dialogue de changement de mot de passe."""
@@ -643,7 +661,7 @@ class LoginWindow(QMainWindow):
 
         dlg = QDialog(self)
         dlg.setWindowTitle('Confirmation')
-        dlg.setMinimumWidth(400)
+        dlg.setMinimumWidth(377)
         layout = QVBoxLayout(dlg)
 
         msg = QLabel(
@@ -1003,7 +1021,7 @@ Pass = votre_mot_de_passe_supabase
         QMetaObject.invokeMethod(
             self._err_lbl, "setStyleSheet",
             Qt.QueuedConnection,
-            Q_ARG(str, 'color: #c0392b; font-size: 11px;')
+            Q_ARG(str, f'color: #c0392b; font-size: {theme_manager.font_size(11)}px;')
         )
         QMetaObject.invokeMethod(
             self._err_lbl, "show",
@@ -1032,7 +1050,7 @@ Pass = votre_mot_de_passe_supabase
 
     def _show_progress(self, msg: str) -> None:
         self._err_lbl.setText(msg)
-        self._err_lbl.setStyleSheet('color: #2c3e50; font-size: 11px;')
+        self._err_lbl.setStyleSheet(f'color: #2c3e50; font-size: {theme_manager.font_size(11)}px;')
         self._err_lbl.show()
         self._log(msg)
 
@@ -1042,9 +1060,9 @@ Pass = votre_mot_de_passe_supabase
             from PySide6.QtWidgets import QProgressBar
             self._spinner = QProgressBar()
             self._spinner.setRange(0, 0)  # indéterminé
-            self._spinner.setFixedHeight(20)
+            self._spinner.setFixedHeight(21)
             self._spinner.setStyleSheet(
-                'QProgressBar { border: 1px solid #bdc3c7; border-radius: 4px; '
+                f'QProgressBar {{ border: 1px solid #bdc3c7; border-radius: {theme_manager.design.radius}px; '
                 'background: #ecf0f1; text-align: center; }'
                 'QProgressBar::chunk { background: #3498db; }'
             )
@@ -1112,7 +1130,7 @@ Pass = votre_mot_de_passe_supabase
             if db.local_conn is None:
                 self._bottom_indicator.setText("Module eLarcProf non instanciée")
                 self._bottom_indicator.setStyleSheet(
-                    'color: #2c3e50; font-size: 16px; font-weight: bold;'
+                    f'color: #2c3e50; font-size: {theme_manager.font_size(16)}px; font-weight: bold;'
                 )
                 if hasattr(self, '_bottom_dates_label'):
                     self._bottom_dates_label.setText('')
@@ -1142,7 +1160,7 @@ Pass = votre_mot_de_passe_supabase
                 # Module non instancié
                 self._bottom_indicator.setText("Module eLarcProf non instanciée")
                 self._bottom_indicator.setStyleSheet(
-                    'color: #2c3e50; font-size: 16px; font-weight: bold;'
+                    f'color: #2c3e50; font-size: {theme_manager.font_size(16)}px; font-weight: bold;'
                 )
                 # Supprimer le label des dates s'il existe
                 if hasattr(self, '_bottom_dates_label'):
@@ -1151,7 +1169,7 @@ Pass = votre_mot_de_passe_supabase
             self._log(f"Erreur dans _update_status_bar_from_module_config : {e}")
             self._bottom_indicator.setText("Module eLarcProf non instanciée")
             self._bottom_indicator.setStyleSheet(
-                'color: #2c3e50; font-size: 16px; font-weight: bold;'
+                f'color: #2c3e50; font-size: {theme_manager.font_size(16)}px; font-weight: bold;'
             )
 
     def _update_status_bar(self, res: AuthResult, mode: ConnMode) -> None:
@@ -1181,7 +1199,7 @@ Pass = votre_mot_de_passe_supabase
         # Mettre à jour le label principal
         self._bottom_indicator.setText(title)
         self._bottom_indicator.setStyleSheet(
-            f'color: {color}; font-size: 16px; font-weight: bold;'
+            f'color: {color}; font-size: {theme_manager.font_size(16)}px; font-weight: bold;'
         )
 
         # Mettre à jour le label des dates (créer s'il n'existe pas)
@@ -1189,7 +1207,7 @@ Pass = votre_mot_de_passe_supabase
             self._bottom_dates_label = QLabel()
             self._bottom_dates_label.setAlignment(Qt.AlignCenter)
             self._bottom_dates_label.setStyleSheet(
-                'color: #7f8c8d; font-size: 11px;'
+                f'color: #7f8c8d; font-size: {theme_manager.font_size(11)}px;'
             )
             # Insérer après l'indicateur principal
             layout = self.centralWidget().layout()

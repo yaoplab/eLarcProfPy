@@ -39,17 +39,17 @@ class FilterSection(QFrame):
         }
         QPushButton {
             font-size: 8px;
-            padding: 1px 4px;
+            padding: 1px 3px;
             border: 1px solid #bdc3c7;
             border-radius: 2px;
             background: #ecf0f1;
             color: #2c3e50;
-            min-height: 14px;
+            min-height: 13px;
         }
         QPushButton:hover { background: #d5dbdb; }
         QCheckBox { font-size: 9px; spacing: 2px; }
         QCheckBox::indicator {
-            width: 11px; height: 11px;
+            width: 13px; height: 13px;
             border: 1px solid #95a5a6;
             border-radius: 2px;
             background: #f0f0f0;
@@ -70,8 +70,8 @@ class FilterSection(QFrame):
         self._slots_with_comments: set[str] = set()
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(4, 3, 4, 3)
-        root.setSpacing(2)
+        root.setContentsMargins(3, 3, 3, 3)
+        root.setSpacing(3)
 
         header = QHBoxLayout()
         header.setSpacing(3)
@@ -84,7 +84,7 @@ class FilterSection(QFrame):
         root.addLayout(header)
 
         self._checkboxes_row = QHBoxLayout()
-        self._checkboxes_row.setSpacing(4)
+        self._checkboxes_row.setSpacing(3)
         self._checkboxes_row.setContentsMargins(0, 0, 0, 0)
         root.addLayout(self._checkboxes_row)
 

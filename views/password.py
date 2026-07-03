@@ -21,11 +21,11 @@ class ChangePinDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle('Changer le PIN')
-        self.setMinimumWidth(350)
+        self.setMinimumWidth(377)
         self.setModal(True)
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(12)
+        layout.setSpacing(13)
 
         title = QLabel('Modification du PIN hors connexion')
         title.setStyleSheet('font-size: 14px; font-weight: bold; color: #2c3e50;')
@@ -77,11 +77,11 @@ class ChangePasswordDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle('Changer le mot de passe')
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(377)
         self.setModal(True)
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(12)
+        layout.setSpacing(13)
 
         # Titre
         title = QLabel('Modification du mot de passe Intranet')

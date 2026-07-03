@@ -100,9 +100,9 @@ class EvaluationDetailWidget(QWidget):
             layout.addWidget(sl)
 
         form = QFormLayout()
-        form.setSpacing(4)
+        form.setSpacing(3)
         self._label_display = QLabel('')
-        self._label_display.setStyleSheet("font-size: 11px; color: #555; padding: 4px 0;")
+        self._label_display.setStyleSheet("font-size: 11px; color: #555; padding: 3px 0;")
         self._label_display.setWordWrap(True)
         self._nature_edit = QLineEdit()
         self._nature_edit.setPlaceholderText('Nature (ex: Devoir, Interrogation, Projet...)')
@@ -117,7 +117,7 @@ class EvaluationDetailWidget(QWidget):
 
         # Barre d'outils formatage
         tb = QHBoxLayout()
-        tb.setSpacing(2)
+        tb.setSpacing(3)
         tb.setContentsMargins(0, 0, 0, 0)
         for icon, tip, md_insert in [
             ('B', 'Gras', '**texte**'),
@@ -143,7 +143,7 @@ class EvaluationDetailWidget(QWidget):
         self._source_edit = QTextEdit()
         self._source_edit.setPlaceholderText('Saisir le texte (Markdown supporté)')
         self._source_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self._source_edit.setMinimumHeight(60)
+        self._source_edit.setMinimumHeight(55)
         self._source_edit.setAcceptRichText(False)
         self._spell = _SpellHighlighter(self._source_edit.document(), 'fr_FR')
         layout.addWidget(self._source_edit)
@@ -156,11 +156,11 @@ class EvaluationDetailWidget(QWidget):
         crit_grid.setFrameShape(QFrame.StyledPanel)
         crit_grid.setStyleSheet("""
             QFrame { background: #f8f9fa; border: 1px solid #e9ecef;
-                     border-radius: 3px; padding: 4px; }
+                     border-radius: 3px; padding: 3px; }
         """)
         grid = QGridLayout(crit_grid)
-        grid.setContentsMargins(4, 2, 4, 2)
-        grid.setSpacing(4)
+        grid.setContentsMargins(3, 2, 3, 2)
+        grid.setSpacing(3)
 
         self._crit_widgets = {}
         for i, letter in enumerate(['a', 'b', 'c', 'd']):
@@ -272,7 +272,7 @@ class EvaluationDetailDialog(QDialog):
                  parent=None):
         super().__init__(parent)
         self.setWindowTitle(f'{eval_type}{slot_index:02d} — Détails')
-        self.setMinimumWidth(540)
+        self.setMinimumWidth(610)
         self.setModal(True)
 
         layout = QVBoxLayout(self)
@@ -287,13 +287,13 @@ class EvaluationDetailDialog(QDialog):
         save_btn = QPushButton("Enregistrer")
         save_btn.setStyleSheet("""
             QPushButton { background: #27ae60; color: white; font-weight: bold;
-                          padding: 6px 24px; border-radius: 4px; font-size: 12px; }
+                          padding: 5px 21px; border-radius: 3px; font-size: 12px; }
             QPushButton:hover { background: #219a52; }
         """)
         cancel_btn = QPushButton("Annuler")
         cancel_btn.setStyleSheet("""
             QPushButton { background: #bdc3c7; color: #2c3e50;
-                          padding: 6px 24px; border-radius: 4px; font-size: 12px; }
+                          padding: 5px 21px; border-radius: 3px; font-size: 12px; }
             QPushButton:hover { background: #a0a6ab; }
         """)
         save_btn.clicked.connect(self.accept)
@@ -320,11 +320,11 @@ class _SlotButton(QFrame):
 
     _STYLE_INACTIF = """
         background: #f0f0f0; border: 1px solid #e0e0e0;
-        border-radius: 4px; padding: 3px;
+        border-radius: 3px; padding: 3px;
     """
     _STYLE_ACTIF = """
         background: white; border: 1px solid #27ae60;
-        border-radius: 4px; padding: 3px;
+        border-radius: 3px; padding: 3px;
     """
 
     def __init__(self, slot_index: int, eval_type: str, parent=None):
@@ -343,8 +343,8 @@ class _SlotButton(QFrame):
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 2, 4, 2)
-        layout.setSpacing(1)
+        layout.setContentsMargins(3, 2, 3, 2)
+        layout.setSpacing(3)
 
         # Titre
         self._title = QLabel(f"{self.eval_type}{self.slot_index:02d}")
@@ -357,7 +357,7 @@ class _SlotButton(QFrame):
         self._label_info.setAlignment(Qt.AlignCenter)
         self._label_info.setStyleSheet("font-size: 9px; font-family: Roboto; color: #555; border: none; padding: 0;")
         self._label_info.setWordWrap(True)
-        self._label_info.setMaximumHeight(16)
+        self._label_info.setMaximumHeight(13)
         layout.addWidget(self._label_info)
 
         # Critères : une ligne compacte "☑A  ☐B  ☑C  ☐D"
@@ -438,7 +438,7 @@ class EvaluationPanel(QFrame):
         self.setFrameShape(QFrame.StyledPanel)
         self.setStyleSheet("""
             QFrame { background: white; border: 1px solid #dcdde1;
-                     border-radius: 4px; }
+                     border-radius: 3px; }
         """)
 
         self._build_ui(title)
@@ -455,12 +455,12 @@ class EvaluationPanel(QFrame):
 
     def _build_ui(self, title: str):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 4, 8, 6)
-        layout.setSpacing(2)
+        layout.setContentsMargins(8, 3, 8, 5)
+        layout.setSpacing(3)
 
         # Header row: title + indicators + Gérer button
         header_row = QHBoxLayout()
-        header_row.setSpacing(6)
+        header_row.setSpacing(5)
 
         hdr = QLabel(title)
         hdr.setStyleSheet(
@@ -485,10 +485,10 @@ class EvaluationPanel(QFrame):
 
         if self.compact:
             self._manage_btn = QPushButton("Gérer")
-            self._manage_btn.setFixedHeight(22)
+            self._manage_btn.setFixedHeight(21)
             self._manage_btn.setStyleSheet("""
                 QPushButton { background: #3498db; color: white; font-weight: bold;
-                              font-size: 9px; padding: 2px 12px; border-radius: 3px; }
+                              font-size: 9px; padding: 2px 13px; border-radius: 3px; }
                 QPushButton:hover { background: #2980b9; }
             """)
             self._manage_btn.clicked.connect(self.manage_requested.emit)
@@ -514,7 +514,7 @@ class EvaluationPanel(QFrame):
         self._container = QWidget()
         self._grid = QGridLayout(self._container)
         self._grid.setContentsMargins(0, 0, 0, 0)
-        self._grid.setSpacing(2)
+        self._grid.setSpacing(3)
 
         # Placeholder visible uniquement quand aucun slot actif en mode compact
         self._empty_placeholder = QLabel("Aucune évaluation active — cliquer sur Gérer")

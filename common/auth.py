@@ -1,3 +1,4 @@
+"""Auth — eLarcProfPy layer over larccommon.auth."""
 import os
 import hashlib
 import secrets
@@ -171,16 +172,16 @@ class OAuth2Manager:
 
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT is_adm, is_coordonator, is_secretary "
-                    "FROM larcauth_teachadm WHERE aecuser_ptr_id = %s",
+                    "SELECT type_director, type_coordonator, type_supervisor, "
+                    "type_secretary FROM larcauth_aecuser WHERE id = %s",
                     (user_id,)
                 )
-                tadm = cur.fetchone()
-            if tadm is None:
-                return False, AuthResult(), 'Aucun profil enseignant/admin trouvé'
+                roles = cur.fetchone()
+            if roles is None or not any(roles):
+                return False, AuthResult(), 'Aucun rôle trouvé'
 
-            role = _deduce_role(is_adm=bool(tadm[0]), is_coord=bool(tadm[1]),
-                                is_secretary=bool(tadm[2]))
+            role = _deduce_role(is_adm=bool(roles[0]), is_coord=bool(roles[1]),
+                                is_sup=bool(roles[2]), is_secretary=bool(roles[3]))
             with conn.cursor() as cur:
                 term_id, term_label = _load_active_term(cur)
 

@@ -33,11 +33,11 @@ class _SlotBar(QFrame):
 
     _STYLE_ACTIF = """
         background: white; border: 1px solid #27ae60;
-        border-radius: 4px; padding: 2px;
+        border-radius: 3px; padding: 2px;
     """
     _STYLE_NEXT = """
         background: #f5f5f5; border: 1px dashed #bbb;
-        border-radius: 4px; padding: 2px;
+        border-radius: 3px; padding: 2px;
     """
 
     def __init__(self, slot_index: int, eval_type: str, parent=None):
@@ -57,11 +57,11 @@ class _SlotBar(QFrame):
 
     def _build_ui(self):
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(6, 3, 6, 3)
-        layout.setSpacing(6)
+        layout.setContentsMargins(5, 3, 5, 3)
+        layout.setSpacing(5)
 
         self._code = QLabel(f"{self.eval_type}{self.slot_index:02d}")
-        self._code.setFixedWidth(32)
+        self._code.setFixedWidth(34)
         self._code.setAlignment(Qt.AlignCenter)
         self._code.setStyleSheet("font-weight: bold; font-size: 10px; border: none; padding: 0;")
         layout.addWidget(self._code)
@@ -164,7 +164,7 @@ class EvalManagerWindow(QDialog):
         splitter.setSizes([400, 500])
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setContentsMargins(5, 5, 5, 5)
         layout.addWidget(splitter)
 
         self._status_lbl = QLabel('')
@@ -182,12 +182,12 @@ class EvalManagerWindow(QDialog):
         container.setFrameShape(QFrame.StyledPanel)
         container.setStyleSheet("""
             QFrame { background: white; border: 1px solid #dcdde1;
-                     border-radius: 4px; }
+                     border-radius: 3px; }
         """)
 
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(6, 4, 6, 4)
-        layout.setSpacing(4)
+        layout.setContentsMargins(5, 3, 5, 3)
+        layout.setSpacing(3)
 
         # Tabs F01-F12
         self._build_tabs(layout)
@@ -208,7 +208,7 @@ class EvalManagerWindow(QDialog):
         self._list_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._list_layout = QVBoxLayout(self._list_container)
         self._list_layout.setContentsMargins(0, 0, 0, 0)
-        self._list_layout.setSpacing(2)
+        self._list_layout.setSpacing(3)
 
         self._bars: list[_SlotBar] = []
         for i in range(12):
@@ -228,15 +228,15 @@ class EvalManagerWindow(QDialog):
         tabs.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         th = QHBoxLayout(tabs)
         th.setContentsMargins(0, 0, 0, 0)
-        th.setSpacing(2)
+        th.setSpacing(3)
 
         self._tab_btns: list[QPushButton] = []
         for i in range(12):
             btn = QPushButton(f"{self.eval_type}{i+1:02d}")
-            btn.setFixedHeight(24)
+            btn.setFixedHeight(21)
             btn.setCheckable(True)
             btn.setStyleSheet("""
-                QPushButton { font-size: 8px; font-weight: bold; padding: 1px 4px;
+                QPushButton { font-size: 8px; font-weight: bold; padding: 1px 3px;
                               background: #e0e0e0; color: #666; border-radius: 3px; }
                 QPushButton:checked { background: #27ae60; color: white; }
                 QPushButton:hover { background: #bdc3c7; }
@@ -253,12 +253,12 @@ class EvalManagerWindow(QDialog):
         container.setFrameShape(QFrame.StyledPanel)
         container.setStyleSheet("""
             QFrame { background: white; border: 1px solid #dcdde1;
-                     border-radius: 4px; }
+                     border-radius: 3px; }
         """)
 
         layout = QVBoxLayout(container)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
+        layout.setSpacing(5)
 
         self._detail = EvaluationDetailWidget(
             1, self.eval_type, None,
@@ -269,7 +269,7 @@ class EvalManagerWindow(QDialog):
         save_btn = QPushButton("Enregistrer cette évaluation")
         save_btn.setStyleSheet("""
             QPushButton { background: #27ae60; color: white; font-weight: bold;
-                          padding: 8px 24px; border-radius: 4px; font-size: 13px; }
+                          padding: 8px 21px; border-radius: 3px; font-size: 13px; }
             QPushButton:hover { background: #219a52; }
         """)
         save_btn.clicked.connect(self._on_save_slot)
@@ -359,13 +359,13 @@ class EvalManagerWindow(QDialog):
             btn = self._tab_btns[i]
             if active:
                 btn.setStyleSheet("""
-                    QPushButton { font-size: 8px; font-weight: bold; padding: 1px 4px;
-                                  background: #27ae60; color: white; border-radius: 3px; }
+                QPushButton { font-size: 8px; font-weight: bold; padding: 1px 3px;
+                              background: #27ae60; color: white; border-radius: 3px; }
                     QPushButton:hover { background: #219a52; }
                 """)
             else:
                 btn.setStyleSheet("""
-                    QPushButton { font-size: 8px; font-weight: bold; padding: 1px 4px;
+                    QPushButton { font-size: 8px; font-weight: bold; padding: 1px 3px;
                                   background: #e0e0e0; color: #666; border-radius: 3px; }
                     QPushButton:hover { background: #bdc3c7; }
                 """)

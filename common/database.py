@@ -60,6 +60,16 @@ class Database:
             'connect_timeout':  5,
         }
 
+    def _sync_server_to_larccommon(self) -> None:
+        """Sync server conn state to larccommon.database.db so AuthManager sees it."""
+        from larccommon.database import db as lc_db, DBMode as LcDBMode
+        if self._server_mode == DBMode.INTRANET:
+            lc_db._intranet = self._intranet
+            lc_db._server_mode = LcDBMode.INTRANET
+        elif self._server_mode == DBMode.CLOUD:
+            lc_db._cloud = self._cloud
+            lc_db._server_mode = LcDBMode.CLOUD
+
     def connect_intranet(self) -> bool:
         if not _PG_OK:
             _log("connect_intranet: psycopg2 non installé")
@@ -72,6 +82,7 @@ class Database:
             self._intranet.autocommit = True
             self._mode = DBMode.INTRANET
             self._server_mode = DBMode.INTRANET
+            self._sync_server_to_larccommon()
             _log("connect_intranet: connexion réussie")
             return True
         except Exception as e:
@@ -93,6 +104,7 @@ class Database:
             self._cloud.autocommit = True
             self._mode = DBMode.CLOUD
             self._server_mode = DBMode.CLOUD
+            self._sync_server_to_larccommon()
             _log("connect_cloud: connexion réussie")
             return True
         except Exception as e:
@@ -119,6 +131,13 @@ class Database:
             return False
 
     def disconnect_all(self) -> None:
+        try:
+            from larccommon.database import db as lc_db, DBMode as LcDBMode
+            for attr in ('_intranet', '_cloud'):
+                setattr(lc_db, attr, None)
+            lc_db._server_mode = LcDBMode.NONE
+        except Exception:
+            pass
         for attr in ('_intranet', '_cloud'):
             conn = getattr(self, attr, None)
             if conn:
@@ -174,7 +193,10 @@ class Database:
                 f"@{params['host']}:{params['port']}/{params['dbname']}")
 
     def __del__(self) -> None:
-        self.disconnect_all()
+        try:
+            self.disconnect_all()
+        except Exception:
+            pass
 
 
 db = Database()

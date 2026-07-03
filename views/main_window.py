@@ -208,8 +208,8 @@ class MainWindow(QMainWindow):
         root = QWidget()
         self.setCentralWidget(root)
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(6, 6, 6, 6)
-        layout.setSpacing(4)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(3)
 
         layout.addWidget(self._build_header())
 
@@ -219,10 +219,10 @@ class MainWindow(QMainWindow):
 
         # Workspace (grille + actions) — toujours en layout, vide si pas de sélection
         self._workspace_widget = QWidget()
-        self._workspace_widget.setMinimumHeight(200)
+        self._workspace_widget.setMinimumHeight(144)
         ws_layout = QVBoxLayout(self._workspace_widget)
         ws_layout.setContentsMargins(0, 0, 0, 0)
-        ws_layout.setSpacing(4)
+        ws_layout.setSpacing(3)
         ws_layout.addWidget(self._build_students_grid(), 1)
         ws_layout.addWidget(self._build_actions_bar())
         layout.addWidget(self._workspace_widget, 1)
@@ -233,9 +233,9 @@ class MainWindow(QMainWindow):
     def _build_header(self) -> QWidget:
         header = QFrame()
         header.setObjectName('header')
-        header.setMinimumHeight(56)
+        header.setMinimumHeight(55)
         h = QHBoxLayout(header)
-        h.setContentsMargins(16, 8, 16, 8)
+        h.setContentsMargins(13, 8, 13, 8)
 
         prof_name = session.full_name or '—'
         annee = self._read_annee_scolaire()
@@ -254,10 +254,10 @@ class MainWindow(QMainWindow):
         h.addWidget(prof_lbl)
         h.addStretch(1)
         h.addWidget(annee_lbl)
-        h.addSpacing(24)
+        h.addSpacing(21)
         h.addWidget(trim_lbl)
 
-        h.addSpacing(16)
+        h.addSpacing(13)
 
         # Bouton palette de thèmes
         palette_btn = QPushButton('🎨')
@@ -265,7 +265,7 @@ class MainWindow(QMainWindow):
         palette_btn.setToolTip('Changer le thème')
         palette_btn.setStyleSheet(
             f"QPushButton {{ background: transparent; border: 1px solid {theme_manager.theme.palette.header_text}; "
-            f"border-radius: 15px; font-size: 14px; color: {theme_manager.theme.palette.header_text}; }}"
+            f"border-radius: 13px; font-size: {theme_manager.font_size(14)}px; color: {theme_manager.theme.palette.header_text}; }}"
             f"QPushButton:hover {{ background: rgba(255,255,255,0.2); }}"
         )
         palette_menu = QMenu()
@@ -283,7 +283,7 @@ class MainWindow(QMainWindow):
         font_btn.setToolTip('Taille du texte')
         font_btn.setStyleSheet(
             f"QPushButton {{ background: transparent; border: 1px solid {theme_manager.theme.palette.header_text}; "
-            f"border-radius: 15px; font-size: 11px; font-weight: bold; "
+            f"border-radius: 13px; font-size: {theme_manager.font_size(11)}px; font-weight: bold; "
             f"color: {theme_manager.theme.palette.header_text}; }}"
             f"QPushButton:hover {{ background: rgba(255,255,255,0.2); }}"
         )
@@ -326,7 +326,7 @@ class MainWindow(QMainWindow):
         container = QWidget()
         h = QHBoxLayout(container)
         h.setContentsMargins(0, 0, 0, 0)
-        h.setSpacing(4)
+        h.setSpacing(3)
 
         # Section 1 : Matière-Classe
         h.addWidget(self._build_matiere_section(), 0)
@@ -353,9 +353,9 @@ class MainWindow(QMainWindow):
         f = QFrame()
         f.setProperty('class', 'panel')
         f.setFrameShape(QFrame.StyledPanel)
-        f.setFixedWidth(210)
+        f.setFixedWidth(233)
         v = QVBoxLayout(f)
-        v.setContentsMargins(8, 6, 8, 6)
+        v.setContentsMargins(8, 5, 8, 5)
         v.setSpacing(3)
 
         lbl = QLabel('Matière - Classe')
@@ -383,7 +383,7 @@ class MainWindow(QMainWindow):
         self._items_other_combo.currentIndexChanged.connect(self._on_other_item_selected)
         v.addWidget(self._items_other_combo)
 
-        v.addSpacing(6)
+        v.addSpacing(5)
 
         v.addStretch()
         return f
@@ -399,7 +399,7 @@ class MainWindow(QMainWindow):
         f.setProperty('class', 'panel')
         f.setFrameShape(QFrame.StyledPanel)
         v = QVBoxLayout(f)
-        v.setContentsMargins(8, 6, 8, 6)
+        v.setContentsMargins(8, 5, 8, 5)
         v.setSpacing(3)
 
         # Titre + Gérer
@@ -411,12 +411,12 @@ class MainWindow(QMainWindow):
         title_row.addWidget(lbl)
         title_row.addStretch()
         gerer_btn = QPushButton('Gérer')
-        gerer_btn.setFixedHeight(24)
+        gerer_btn.setFixedHeight(21)
         gerer_btn.setFont(theme_manager.font(theme_manager.theme.fonts.button, QFont.Bold))
         gerer_btn.setStyleSheet(
             f"QPushButton {{ background: {theme_manager.theme.palette.primary}; "
             f"color: {theme_manager.theme.palette.on_primary}; border: none; "
-            f"border-radius: 12px; font-weight: bold; padding: 1px 12px; }}"
+            f"border-radius: 13px; font-weight: bold; padding: 2px 13px; }}"
             f"QPushButton:hover {{ background: {theme_manager.theme.palette.primary_dark}; }}"
         )
         if is_f:
@@ -432,38 +432,38 @@ class MainWindow(QMainWindow):
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setFrameShape(QFrame.NoFrame)
-        scroll.setMaximumHeight(180)
+        scroll.setMaximumHeight(144)
         scroll.setStyleSheet(f"QScrollArea {{ border: none; background: transparent; }}")
 
         scroll_content = QWidget()
         scroll_content.setStyleSheet("background: transparent;")
         slot_layout = QVBoxLayout(scroll_content)
         slot_layout.setContentsMargins(0, 0, 0, 0)
-        slot_layout.setSpacing(2)
+        slot_layout.setSpacing(3)
 
         scroll.setWidget(scroll_content)
         v.addWidget(scroll, 1)
 
         # Boutons Toute / Aucune / Commentaire
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(2)
+        btn_row.setSpacing(3)
         tout_btn = QPushButton('Toute')
         tout_btn.setCheckable(True)
-        tout_btn.setFixedHeight(18)
+        tout_btn.setFixedHeight(21)
         tout_btn.setStyleSheet(self._btn_toggle_style(False))
         tout_btn.clicked.connect(partial(self._on_toggle_all, eval_type))
         btn_row.addWidget(tout_btn)
 
         aucune_btn = QPushButton('Aucune')
         aucune_btn.setCheckable(True)
-        aucune_btn.setFixedHeight(18)
+        aucune_btn.setFixedHeight(21)
         aucune_btn.setStyleSheet(self._btn_toggle_style(False))
         aucune_btn.clicked.connect(partial(self._on_toggle_none, eval_type))
         btn_row.addWidget(aucune_btn)
 
         comm_btn = QPushButton('Commentaire')
         comm_btn.setCheckable(True)
-        comm_btn.setFixedHeight(18)
+        comm_btn.setFixedHeight(21)
         comm_btn.setStyleSheet(self._btn_toggle_style(False))
         comm_btn.clicked.connect(partial(self._on_toggle_comment, eval_type))
         btn_row.addWidget(comm_btn)
@@ -486,9 +486,9 @@ class MainWindow(QMainWindow):
         f = QFrame()
         f.setProperty('class', 'panel')
         f.setFrameShape(QFrame.StyledPanel)
-        f.setFixedWidth(170)
+        f.setFixedWidth(144)
         v = QVBoxLayout(f)
-        v.setContentsMargins(8, 6, 8, 6)
+        v.setContentsMargins(8, 5, 8, 5)
         v.setSpacing(3)
 
         lbl = QLabel('Jugements')
@@ -498,7 +498,7 @@ class MainWindow(QMainWindow):
 
         jgt_btn = QPushButton('Jugement')
         jgt_btn.setCheckable(True)
-        jgt_btn.setFixedHeight(26)
+        jgt_btn.setFixedHeight(21)
         jgt_btn.setFont(theme_manager.font(theme_manager.theme.fonts.button))
         jgt_btn.setStyleSheet(self._btn_toggle_style(True))
         jgt_btn.clicked.connect(self._on_jgt_toggle)
@@ -506,7 +506,7 @@ class MainWindow(QMainWindow):
 
         note_btn = QPushButton('Note sur 7')
         note_btn.setCheckable(True)
-        note_btn.setFixedHeight(26)
+        note_btn.setFixedHeight(21)
         note_btn.setFont(theme_manager.font(theme_manager.theme.fonts.button))
         note_btn.setStyleSheet(self._btn_toggle_style(True))
         note_btn.clicked.connect(self._on_jgt_note_toggle)
@@ -514,13 +514,13 @@ class MainWindow(QMainWindow):
 
         comm_btn = QPushButton('Commentaire')
         comm_btn.setCheckable(True)
-        comm_btn.setFixedHeight(26)
+        comm_btn.setFixedHeight(21)
         comm_btn.setFont(theme_manager.font(theme_manager.theme.fonts.button))
         comm_btn.setStyleSheet(self._btn_toggle_style(False))
         comm_btn.clicked.connect(self._on_jgt_comment_toggle)
         v.addWidget(comm_btn)
 
-        v.addSpacing(4)
+        v.addSpacing(3)
 
         sep = QFrame()
         sep.setObjectName('sep')
@@ -532,7 +532,7 @@ class MainWindow(QMainWindow):
             btn = QPushButton(f'Critère {letter.upper()}')
             btn.setCheckable(True)
             btn.setChecked(self._visible_crits[letter])
-            btn.setFixedHeight(22)
+            btn.setFixedHeight(21)
             btn.setFont(theme_manager.font(theme_manager.theme.fonts.small))
             btn.setStyleSheet(self._btn_crit_style(True))
             btn.clicked.connect(partial(self._on_toggle_crit, letter))
@@ -938,24 +938,24 @@ class MainWindow(QMainWindow):
                 row.setStyleSheet(
                     f"QFrame {{ background: {theme_manager.theme.palette.primary_light}; "
                     f"border: 1px solid {theme_manager.theme.palette.active}; "
-                    f"border-left: 4px solid {theme_manager.theme.palette.selection}; "
-                    f"border-radius: 4px; }}"
+                    f"border-left: 3px solid {theme_manager.theme.palette.selection}; "
+                    f"border-radius: 3px; }}"
                 )
             else:
                 row.setStyleSheet(
                     f"QFrame {{ background: {theme_manager.theme.palette.background}; "
                     f"border: 1px solid {theme_manager.theme.palette.border}; "
-                    f"border-radius: 4px; }}"
+                    f"border-radius: 3px; }}"
                 )
             row.setCursor(Qt.PointingHandCursor)
 
             rh = QHBoxLayout(row)
-            rh.setContentsMargins(4, 1, 4, 1)
-            rh.setSpacing(4)
+            rh.setContentsMargins(3, 1, 3, 1)
+            rh.setSpacing(3)
 
             # Index
             idx_lbl = QLabel(f'{eval_type}{idx:02d}')
-            idx_lbl.setFixedWidth(30)
+            idx_lbl.setFixedWidth(34)
             idx_lbl.setFont(theme_manager.font(theme_manager.theme.fonts.small, QFont.Bold))
             idx_lbl.setStyleSheet(f"color: {theme_manager.theme.palette.text_strong}; border: none;")
             rh.addWidget(idx_lbl)
@@ -965,7 +965,7 @@ class MainWindow(QMainWindow):
             if len(label_txt) > 22:
                 label_txt = label_txt[:20] + '…'
             lbl_label = QLabel(label_txt)
-            lbl_label.setFixedWidth(110)
+            lbl_label.setFixedWidth(89)
             lbl_label.setFont(theme_manager.font(theme_manager.theme.fonts.small))
             lbl_label.setStyleSheet(f"color: {theme_manager.theme.palette.text_strong}; border: none;")
             rh.addWidget(lbl_label)
@@ -975,7 +975,7 @@ class MainWindow(QMainWindow):
             if len(nature_txt) > 16:
                 nature_txt = nature_txt[:14] + '…'
             lbl_nature = QLabel(nature_txt)
-            lbl_nature.setFixedWidth(80)
+            lbl_nature.setFixedWidth(89)
             lbl_nature.setFont(theme_manager.font(theme_manager.theme.fonts.small))
             lbl_nature.setStyleSheet(f"color: {theme_manager.theme.palette.text_soft}; border: none;")
             rh.addWidget(lbl_nature)
@@ -1003,7 +1003,7 @@ class MainWindow(QMainWindow):
             empty_lbl = QLabel('Aucune évaluation active')
             empty_lbl.setProperty('class', 'placeholder')
             empty_lbl.setFont(theme_manager.font(theme_manager.theme.fonts.small))
-            empty_lbl.setStyleSheet(f"color: {theme_manager.theme.palette.inactive}; padding: 4px;")
+            empty_lbl.setStyleSheet(f"color: {theme_manager.theme.palette.inactive}; padding: 3px;")
             layout.addWidget(empty_lbl)
 
         layout.addStretch()
