@@ -1165,3 +1165,90 @@ eLarcProfPy/
 ├── export_to_sqlite.py     # Export PostgreSQL → SQLite
 └── docs/                   # Documentation algorithmique
 ```
+
+---
+
+## Itération 21 — Dashboard HomeWindow + Login refactor (9 juillet 2026)
+
+### Contexte
+
+L'application passait directement du login au `MainWindow` (grille de notes). Il manquait un écran intermédiaire pour orienter le professeur vers ses différentes activités.
+
+### Réalisations
+
+#### 1. `views/home_window.py` — Dashboard (~800 lignes)
+
+Écran intermédiaire login → notes avec :
+
+**Colonne gauche** :
+- Carte Profil : nom, email, rôle, année, trimestre, nb classes-matières, nb élèves
+- Indicateurs connexion serveur : `Intranet : ●/○`, `Cloud : ●/○`, `Hors connexion`
+- Carte Synchro : date dernière sync, source, compteur modifs non synchronisées par table
+- Bouton **Synchroniser** (connexion serveur auto + pull/push)
+
+**Colonne droite** — boutons conditionnels par programme :
+- Section PEI (visible si prof enseigne PEI/MYP) :
+  - Unité de groupes de matières, Unités interdisciplinaires, Projet Personnel
+  - **Mes classes PEI** (visible seulement si serveur connecté)
+- Section DP (visible si prof enseigne DP/DPFr/DPEn) :
+  - Unité de groupes de matières, TDC, CAS, Mémoire
+  - **Mes classes DP** (visible seulement si serveur connecté)
+- **Professeur principal** (visible si fk_headteacher_id = prof)
+- **Déconnexion**
+
+Chaque bouton a sa propre requête de visibilité dans `_detect_button_visibility()`.
+
+#### 2. `views/login.py` — Refactor complet
+
+- Style uniformisé avec `_STYLE` property + QSS classes (`.btn-primary`, `.btn-google`, `.panel`, etc.)
+- Espacement Fibonacci via `theme_manager.phi_theme.spacing.spacing()`
+- Taille fenêtre 480×780 (ratio φ ≈ 1.625)
+- i18n : `Translator.instance(lang).load_dir(...)` + `_()` pour tous les textes
+- 18 clés `prof_login.*` dans LarcCommon fr.json/en.json
+- Indicateurs réseau dans le header, pas dans le bandeau bleu
+
+#### 3. `common/theme.py` — Ajout phi_theme
+
+- Property `ThemeManager.phi_theme` → `PhiTheme(ThemeConfig) + PhiScale(base_spacing=4)`
+- `_M3Colors` mappe la palette eLarcProfPy → propriétés M3 (primary, surface, error, outline, etc.)
+- Reset automatique au `set_active()`
+
+#### 4. Mapping boutons → vues cibles (`_BTN_VIEW`)
+
+```
+college_notes_0    ← Unité de groupes PEI (ex-MainWindow)
+college_notes_opt1 ← Unités interdisciplinaires
+college_notes_opt2 ← Projet Personnel
+colleges_eleves    ← Mes classes PEI (serveur direct, pas SQLite)
+lycee_notes_0      ← Unité de groupes DP
+lycee_notes_opt1   ← Mémoire
+lycee_notes_opt2   ← TDC
+lycee_notes_opt3   ← CAS
+lycee_eleves       ← Mes classes DP (serveur direct)
+college_bulletin   ← Professeur principal PEI (SQLite)
+lycee_bulletin     ← Professeur principal DP (SQLite)
+```
+
+#### 5. Renommage global
+
+- "eLarcProf" → "LarcProf" dans tous les titres de fenêtres
+- `main_window.py` titre → "LarcProf — College Notes"
+
+#### 6. Corrections
+
+- `EvalManagerWindow._on_manager_closed` wrappé dans try/except RuntimeError (bug destroyed lambda)
+- Ne pas utiliser `_` comme variable throwaway (écrase `_()` i18n) → `_outer`, `_ignored`
+
+### Fichiers modifiés/créés
+
+| Fichier | Action |
+|---|---|
+| `views/home_window.py` | Créé (~800 lignes) |
+| `views/login.py` | Reconstruit (~1180 lignes) |
+| `views/main_window.py` | Titre + fix destroyed lambda |
+| `common/theme.py` | +phi_theme, +_M3Colors (~370 lignes) |
+| `../LarcCommon/larccommon/l10n/fr.json` | +18 clés prof_login.* |
+| `../LarcCommon/larccommon/l10n/en.json` | +18 clés prof_login.* |
+| `../LarcSuperviseur/AGENTS.md` | +eLarcProfPy section complète |
+| `docs/etat_projet.md` | Mis à jour |
+| `docs/historique_construction.md` | Itération 21 |

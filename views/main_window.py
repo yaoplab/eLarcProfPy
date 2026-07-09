@@ -156,7 +156,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle('eLarcProf — Espace de travail')
+        self.setWindowTitle('LarcProf — College Notes')
         self.resize(1200, 800)
         self.setStyleSheet(self._STYLE)
 
@@ -1412,26 +1412,27 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f'Erreur: {e}')
 
     def _on_manager_closed(self, eval_type: str):
-        if self._current_ts_id:
-            self._load_evaluations_from_db(self._current_ts_id)
-            # Ré-sélectionner au moins un slot si la sélection courante n'existe plus
-            evals = self._evals_f if eval_type == 'F' else self._evals_s
-            visible_set = self._visible_f if eval_type == 'F' else self._visible_s
-            still_visible = {idx for idx in visible_set if any(e['index'] == idx and e['is_active'] for e in evals)}
-            visible_set.clear()
-            visible_set.update(still_visible)
-            if not visible_set:
-                for e in evals:
-                    if e['is_active']:
-                        visible_set.add(e['index'])
-                        break
-            # Reset last_clicked si plus valide
-            last_key = '_last_clicked_f' if eval_type == 'F' else '_last_clicked_s'
-            lc = getattr(self, last_key)
-            if lc is not None and not any(e['index'] == lc and e['is_active'] for e in evals):
-                setattr(self, last_key, next((e['index'] for e in evals if e['is_active']), None))
-            self._update_top_bar()
-            self._on_selection_changed()
+        try:
+            if self._current_ts_id:
+                self._load_evaluations_from_db(self._current_ts_id)
+                evals = self._evals_f if eval_type == 'F' else self._evals_s
+                visible_set = self._visible_f if eval_type == 'F' else self._visible_s
+                still_visible = {idx for idx in visible_set if any(e['index'] == idx and e['is_active'] for e in evals)}
+                visible_set.clear()
+                visible_set.update(still_visible)
+                if not visible_set:
+                    for e in evals:
+                        if e['is_active']:
+                            visible_set.add(e['index'])
+                            break
+                last_key = '_last_clicked_f' if eval_type == 'F' else '_last_clicked_s'
+                lc = getattr(self, last_key)
+                if lc is not None and not any(e['index'] == lc and e['is_active'] for e in evals):
+                    setattr(self, last_key, next((e['index'] for e in evals if e['is_active']), None))
+                self._update_top_bar()
+                self._on_selection_changed()
+        except RuntimeError:
+            pass
         if eval_type == 'F':
             self._manager_f = None
         else:

@@ -14,11 +14,47 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
 from phibuilder import PhiBuilder
+from phibuilder.theme import Theme as PhiTheme, ThemeConfig
+from phibuilder.phi.scale import PhiScale
 from larccommon.theme import (
     Palette as BasePalette,
     FontScale,
     DesignTokens,
 )
+
+
+class _M3Colors:
+    """Mappe la palette eLarcProfPy vers les propriétés M3 des widgets phibuilder."""
+
+    def __init__(self, p):
+        self.primary = p.primary
+        self.on_primary = p.on_primary
+        self.primary_container = getattr(p, 'primary_container', p.primary_light)
+        self.on_primary_container = p.text_strong
+        self.secondary = getattr(p, 'secondary', p.accent)
+        self.on_secondary = getattr(p, 'on_secondary', '#FFFFFF')
+        self.secondary_container = getattr(p, 'secondary_container', p.primary_container)
+        self.on_secondary_container = p.text_strong
+        self.tertiary = getattr(p, 'tertiary', p.accent)
+        self.on_tertiary = getattr(p, 'on_tertiary', '#FFFFFF')
+        self.tertiary_container = getattr(p, 'tertiary_container', p.primary_light)
+        self.error = p.error
+        self.on_error = getattr(p, 'on_error', '#FFFFFF')
+        self.error_container = getattr(p, 'error_container', p.danger or '#FFCDD2')
+        self.surface = p.surface
+        self.on_surface = p.text_strong
+        self.surface_variant = getattr(p, 'surface_variant', p.background)
+        self.on_surface_variant = p.text_soft
+        self.background = p.background
+        self.on_background = p.text_strong
+        self.outline = getattr(p, 'outline', p.border)
+        self.outline_variant = getattr(p, 'outline_variant', p.border_light)
+        self.surface_container = getattr(p, 'surface_variant', p.background)
+        self.surface_container_highest = getattr(p, 'surface_variant', p.background)
+        self.surface_container_low = p.surface
+        self.inverse_surface = p.text_soft
+        self.inverse_on_surface = p.surface
+        self.inverse_primary = p.primary
 
 
 @dataclass
@@ -112,6 +148,7 @@ class ThemeManager:
         self._theme: Theme = self._themes[self._active]
         self._app: Optional[QApplication] = None
         self._phibuilder: Optional[PhiBuilder] = None
+        self._phi_theme: Optional[PhiTheme] = None
 
     @property
     def theme(self) -> Theme:
@@ -120,6 +157,19 @@ class ThemeManager:
     @property
     def palette(self) -> Palette:
         return self._theme.palette
+
+    @property
+    def phi_theme(self) -> PhiTheme:
+        if self._phi_theme is None:
+            cfg = ThemeConfig(
+                seed_color=_SEED_MAP.get(self._active, '#1565C0'),
+                is_dark=_IS_DARK_MAP.get(self._active, False),
+                font_family='Segoe UI',
+            )
+            self._phi_theme = PhiTheme(cfg)
+            self._phi_theme.spacing = PhiScale(base_spacing=4)
+        self._phi_theme.colors = _M3Colors(self._theme.palette)
+        return self._phi_theme
 
     @property
     def design(self) -> DesignTokens:
@@ -135,6 +185,7 @@ class ThemeManager:
         if name in self._themes:
             self._active = name
             self._theme = self._themes[name]
+            self._phi_theme = None
             self._sync_phibuilder()
             self._reapply()
             return True
