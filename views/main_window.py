@@ -1308,17 +1308,23 @@ class MainWindow(QMainWindow):
         self._row_ids: dict[int, int] = {}
         if existing_visible:
             has_fk = False
+            fk_col = 'fk_student_id'
             try:
                 cur = conn.execute(f'PRAGMA table_info("{table}")')
                 for col in cur.fetchall():
                     if col[1] == 'fk_student_id':
                         has_fk = True
+                        fk_col = 'fk_student_id'
                         break
+                    if col[1] == 'learner_has_termsubject_ptr_id':
+                        has_fk = True
+                        fk_col = 'learner_has_termsubject_ptr_id'
+                        # continue checking — fk_student_id preferred
             except Exception:
                 pass
 
             if has_fk:
-                select_list = ['id', 'fk_student_id'] + existing_visible
+                select_list = ['id', fk_col] + existing_visible
                 try:
                     cols_sql = ', '.join(f'"{c}"' for c in select_list)
                     rows = conn.execute(
