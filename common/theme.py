@@ -63,7 +63,7 @@ class ThemeManagerWrapper:
     def font_size(self, base: int) -> int:
         return self._original.font_size(base)
 
-    def font(self, base: int, weight=...):
+    def font(self, base: int, weight=QFont.Weight.Normal):
         return self._original.font(base, weight)
 
     def names(self):
