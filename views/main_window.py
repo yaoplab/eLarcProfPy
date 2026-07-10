@@ -1343,7 +1343,27 @@ class MainWindow(QMainWindow):
             for ci, db_name in enumerate(existing_visible):
                 val = eleve_notes.get(db_name, '')
 
-                item_bg = QColor(255, 100, 100)  # ROUGE test
+                item_bg: QColor | None = None
+
+                # Gradient pastel si colonne note avec valeur
+                is_synth = (db_name == synth_display)
+                is_note_col = '_note_' in db_name or is_synth
+                if is_note_col and val:
+                    try:
+                        note_val = float(val)
+                    except (ValueError, TypeError):
+                        pass
+                    else:
+                        max_note = 8 if cycle == 'PEI' else 20
+                        half = max_note / 2
+                        clamped = max(0, min(note_val, max_note))
+                        if clamped <= half:
+                            t = clamped / half
+                            r, g, b = 255, int(100 + 155 * t), int(100 + 155 * t)
+                        else:
+                            t = (clamped - half) / half
+                            r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
+                        item_bg = QColor(r, g, b)
 
                 item = ColorItem(str(val), item_bg)
                 item.setTextAlignment(Qt.AlignCenter)
