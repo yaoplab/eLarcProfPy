@@ -185,6 +185,7 @@ class MainWindow(QMainWindow):
         self._last_clicked_s: int | None = None
         self._show_jgt_comment: bool = False
         self._visible_crits: dict[str, bool] = {'a': True, 'b': True, 'c': True, 'd': True}
+        self._name_format_prenom_first: bool = False  # True = "Prenom Nom"
         self._grille:         QTableWidget | None = None
         self._row_ids: dict[int, int] = {}  # student_id → learner table row id
         self._dirty_cells: dict[tuple[int, str], str] = {}  # (student_id, col_db_name) → new value
@@ -570,6 +571,7 @@ class MainWindow(QMainWindow):
         )
         self._grille.setSortingEnabled(True)
         self._grille.verticalHeader().setVisible(False)
+        self._grille.horizontalHeader().sectionClicked.connect(self._on_header_section_clicked)
 
         h.addWidget(self._grille, 1)
 
@@ -1274,9 +1276,13 @@ class MainWindow(QMainWindow):
         # --- 5. Remplir la grille ---
         for row_idx, eleve in enumerate(eleves):
             # Colonne 0 : nom élève
-            item_eleve = QTableWidgetItem(f"{eleve['nom']} {eleve['prenom']}")
+            name_txt = (f"{eleve['prenom']} {eleve['nom']}" if self._name_format_prenom_first
+                        else f"{eleve['nom']} {eleve['prenom']}")
+            item_eleve = QTableWidgetItem(name_txt)
             item_eleve.setFlags(item_eleve.flags() & ~Qt.ItemIsEditable)
             item_eleve.setData(Qt.UserRole, eleve['id'])
+            item_eleve.setData(Qt.UserRole + 1, eleve['nom'])
+            item_eleve.setData(Qt.UserRole + 2, eleve['prenom'])
             item_eleve.setTextAlignment(Qt.AlignCenter)
             self._grille.setItem(row_idx, 0, item_eleve)
 
@@ -1301,10 +1307,10 @@ class MainWindow(QMainWindow):
                     clamped = max(0, min(note_val, max_note))
                     if clamped <= half:
                         t = clamped / half
-                        r, g, b = 255, int(204 + 51 * t), int(204 + 51 * t)
+                        r, g, b = 255, int(100 + 155 * t), int(100 + 155 * t)
                     else:
                         t = (clamped - half) / half
-                        r, g, b = int(255 - 51 * t), 255, int(255 - 51 * t)
+                        r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
                     item.setBackground(QColor(r, g, b))
 
         # --- 6. Largeurs de colonnes ---
@@ -1348,6 +1354,19 @@ class MainWindow(QMainWindow):
         val = item.text().strip() if item else ''
         self._dirty_cells[(student_id, db_name)] = val
         self.statusBar().showMessage('Modifications non sauvegardées')
+
+    def _on_header_section_clicked(self, col: int) -> None:
+        if col != 0:
+            return
+        self._name_format_prenom_first = not self._name_format_prenom_first
+        for row in range(self._grille.rowCount()):
+            item = self._grille.item(row, 0)
+            if item:
+                nom = item.data(Qt.UserRole + 1)
+                prenom = item.data(Qt.UserRole + 2)
+                if nom and prenom:
+                    item.setText(f"{prenom} {nom}" if self._name_format_prenom_first
+                                 else f"{nom} {prenom}")
 
     def _save_grid_edits(self) -> int:
         """Sauvegarde les cellules modifiées dans SQLite. Retourne le nombre de cellules sauvegardées."""
