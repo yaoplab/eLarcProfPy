@@ -568,6 +568,7 @@ class MainWindow(QMainWindow):
         self._grille.setEditTriggers(
             QTableWidget.SelectedClicked | QTableWidget.EditKeyPressed | QTableWidget.AnyKeyPressed
         )
+        self._grille.setSortingEnabled(True)
         self._grille.verticalHeader().setVisible(False)
 
         h.addWidget(self._grille, 1)
@@ -1275,6 +1276,8 @@ class MainWindow(QMainWindow):
             # Colonne 0 : nom élève
             item_eleve = QTableWidgetItem(f"{eleve['nom']} {eleve['prenom']}")
             item_eleve.setFlags(item_eleve.flags() & ~Qt.ItemIsEditable)
+            item_eleve.setData(Qt.UserRole, eleve['id'])
+            item_eleve.setTextAlignment(Qt.AlignCenter)
             self._grille.setItem(row_idx, 0, item_eleve)
 
             # Colonnes 1..N : notes
@@ -1282,32 +1285,27 @@ class MainWindow(QMainWindow):
             for ci, db_name in enumerate(existing_visible):
                 val = eleve_notes.get(db_name, '')
                 item = QTableWidgetItem(str(val))
+                item.setTextAlignment(Qt.AlignCenter)
                 self._grille.setItem(row_idx, ci + 1, item)
 
-                # Colorier la cellule selon la note
+                # Colorier la cellule selon la note — gradient pastel
                 is_synth = (db_name == synth_display)
                 is_note_col = '_note_' in db_name or is_synth
                 if is_note_col and val:
                     try:
                         note_val = float(val)
                     except (ValueError, TypeError):
-                        note_val = -1
-
-                    if is_synth and pei_config:
-                        item.setForeground(QColor(pei_config.note_on_7_color))
-                        font = item.font()
-                        font.setBold(pei_config.note_on_7_bold)
-                        item.setFont(font)
-                    elif pei_config:
-                        bg, fg, bold = pei_config.color_for(note_val if note_val >= 0 else None)
-                        if bg and bg != '#ffffff':
-                            item.setBackground(QColor(bg))
-                        if fg:
-                            item.setForeground(QColor(fg))
-                        if bold:
-                            font = item.font()
-                            font.setBold(True)
-                            item.setFont(font)
+                        continue
+                    max_note = 8 if cycle == 'PEI' else 20
+                    half = max_note / 2
+                    clamped = max(0, min(note_val, max_note))
+                    if clamped <= half:
+                        t = clamped / half
+                        r, g, b = 255, int(204 + 51 * t), int(204 + 51 * t)
+                    else:
+                        t = (clamped - half) / half
+                        r, g, b = int(255 - 51 * t), 255, int(255 - 51 * t)
+                    item.setBackground(QColor(r, g, b))
 
         # --- 6. Largeurs de colonnes ---
         if pei_config:
@@ -1336,11 +1334,14 @@ class MainWindow(QMainWindow):
                     self._grille.setColumnWidth(ci + 1, pei_config.note_width)
 
     def _on_cell_changed(self, row: int, col: int) -> None:
-        if row < 0 or row >= len(self._current_student_ids):
+        if row < 0 or row >= self._grille.rowCount():
             return
         if col <= 0 or col - 1 >= len(self._current_col_names):
             return  # colonne 0 = nom élève (non-éditable)
-        student_id = self._current_student_ids[row]
+        item_name = self._grille.item(row, 0)
+        student_id = item_name.data(Qt.UserRole) if item_name else None
+        if student_id is None:
+            return
         db_name = self._current_col_names[col - 1]
         item = self._grille.item(row, col)
         item = self._grille.item(row, col)
