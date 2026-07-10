@@ -655,11 +655,11 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     def _on_sync(self) -> None:
         """Synchronise avec le serveur, ou sauvegarde locale si hors ligne."""
-        saved = self._save_grid_edits()
+        self._save_grid_edits()
         from common.sync import sync
         from common.database import db as _db
         if not _db.is_server_connected:
-            self.statusBar().showMessage(f'{saved} modification(s) enregistrée(s) en local')
+            self.statusBar().showMessage('Hors ligne — données enregistrées en local')
             return
         self.statusBar().showMessage('Synchronisation en cours...')
         QApplication.processEvents()
