@@ -1181,11 +1181,17 @@ class MainWindow(QMainWindow):
         display_names = []
         for c in existing_visible:
             if c.startswith('f') and '_note_' in c:
-                parts = c.split('_')
-                display_names.append(f'F{parts[0][1:]}_{parts[-1].upper()}')
+                if c.endswith('_nature') or 'nature' in c:
+                    display_names.append('Nature')
+                else:
+                    parts = c.split('_')
+                    display_names.append(f'F{parts[0][1:]}_{parts[-1].upper()}')
             elif c.startswith('s') and '_note_' in c:
-                parts = c.split('_')
-                display_names.append(f'S{parts[0][1:]}_{parts[-1].upper()}')
+                if c.endswith('_nature') or 'nature' in c:
+                    display_names.append('Nature')
+                else:
+                    parts = c.split('_')
+                    display_names.append(f'S{parts[0][1:]}_{parts[-1].upper()}')
             elif c.startswith('jgt_'):
                 display_names.append(f'Jgt {c[-1].upper()}')
             elif c == synth_display:
