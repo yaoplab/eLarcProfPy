@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStatusBar,
     QStyledItemDelegate,
     QTableWidget,
     QTableWidgetItem,
@@ -592,7 +593,6 @@ class MainWindow(QMainWindow):
         self._grille.setStyleSheet(f"QTableWidget::item {{ padding: {ds.space_xxs}px {ds.space_xs}px; }}")
         self._grille.verticalHeader().setVisible(False)
         self._grille.horizontalHeader().sectionClicked.connect(self._on_header_section_clicked)
-        self._grille.setItemDelegate(ColorDelegate())  # Fond de cellule sous Fusion
 
         h.addWidget(self._grille, 1)
 
