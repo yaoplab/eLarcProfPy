@@ -42,6 +42,18 @@ from views.eval_manager import EvalManagerWindow
 
 
 
+class ColorItem(QTableWidgetItem):
+    """QTableWidgetItem qui stocke une couleur de fond accessible via UserRole+3."""
+    def __init__(self, text: str, bg: QColor | None = None):
+        super().__init__(text)
+        self._bg = bg
+
+    def data(self, role: int):
+        if role == Qt.UserRole + 3 and self._bg is not None:
+            return self._bg
+        return super().data(role)
+
+
 class ColorDelegate(QStyledItemDelegate):
     """Delegate: fond depuis UserRole+3, texte centré par-dessus."""
     def paint(self, painter, option, index):
@@ -1330,10 +1342,9 @@ class MainWindow(QMainWindow):
             eleve_notes = notes.get(eleve['id'], {})
             for ci, db_name in enumerate(existing_visible):
                 val = eleve_notes.get(db_name, '')
-                item = QTableWidgetItem(str(val))
-                item.setTextAlignment(Qt.AlignCenter)
 
                 # Colorier la cellule selon la note — gradient pastel
+                item_bg: QColor | None = None
                 is_synth = (db_name == synth_display)
                 is_note_col = '_note_' in db_name or is_synth
                 if is_note_col and val:
@@ -1351,8 +1362,10 @@ class MainWindow(QMainWindow):
                         else:
                             t = (clamped - half) / half
                             r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
-                        item.setData(Qt.UserRole + 3, QColor(r, g, b))
+                        item_bg = QColor(r, g, b)
 
+                item = ColorItem(str(val), item_bg)
+                item.setTextAlignment(Qt.AlignCenter)
                 self._grille.setItem(row_idx, ci + 1, item)
 
         # --- 6. Largeurs de colonnes ---
