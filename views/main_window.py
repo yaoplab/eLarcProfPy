@@ -1395,10 +1395,6 @@ class MainWindow(QMainWindow):
                 item.setTextAlignment(Qt.AlignCenter)
                 self._grille.setItem(row_idx, ci + 1, item)
 
-        # --- Diagnostic ---
-        sample_cols = ', '.join(existing_visible[:3]) if existing_visible else '(aucune)'
-        self.statusBar().showMessage(
-            f'{len(eleves)} élèves, {len(existing_visible)} col, cycle={cycle}', 5000)
         if pei_config:
             self._grille.setColumnWidth(0, pei_config.student_width)
             for ci, db_name in enumerate(existing_visible):
@@ -1458,7 +1454,6 @@ class MainWindow(QMainWindow):
                 item.set_bg(QColor(255, 255, 255))
 
         self._dirty_cells[(student_id, db_name)] = val
-        print(f'[CELL] student={student_id} {db_name}={val} ({len(self._dirty_cells)} dirty)')
         self.statusBar().showMessage('Modifications non sauvegardées')
 
     def _on_header_section_clicked(self, col: int) -> None:
