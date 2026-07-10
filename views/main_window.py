@@ -43,17 +43,17 @@ from views.eval_manager import EvalManagerWindow
 
 
 class ColorDelegate(QStyledItemDelegate):
-    """Delegate: peint le fond depuis BackgroundRole, puis le texte par-dessus."""
+    """Delegate: fond depuis UserRole+3, texte centré par-dessus."""
     def paint(self, painter, option, index):
         self.initStyleOption(option, index)
-        bg = index.data(Qt.BackgroundRole)
 
         # Fond
         painter.save()
-        if bg:
-            painter.fillRect(option.rect, bg)
+        custom_bg = index.data(Qt.UserRole + 3)
+        if custom_bg:
+            painter.fillRect(option.rect, custom_bg)
         else:
-            painter.fillRect(option.rect, QColor(230, 230, 230))  # gris si pas de fond
+            painter.fillRect(option.rect, QColor(245, 245, 245))
         painter.restore()
 
         # Sélection
@@ -1351,7 +1351,7 @@ class MainWindow(QMainWindow):
                         else:
                             t = (clamped - half) / half
                             r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
-                        item.setBackground(QColor(r, g, b))
+                        item.setData(Qt.UserRole + 3, QColor(r, g, b))
 
                 self._grille.setItem(row_idx, ci + 1, item)
 
