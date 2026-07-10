@@ -1367,8 +1367,6 @@ class MainWindow(QMainWindow):
                                 t = (clamped - half) / half
                                 r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
                             item_bg = QColor(r, g, b)
-                            if row_idx == 0 and ci == 0:
-                                print(f'DEBUG gradient: {db_name}={val} -> is_note={is_note_col} {is_synth} bg=({r},{g},{b})')
                     else:
                         item_bg = QColor(255, 255, 255)  # blanc si vide
 
@@ -1378,10 +1376,8 @@ class MainWindow(QMainWindow):
 
         # --- Diagnostic ---
         sample_cols = ', '.join(existing_visible[:3]) if existing_visible else '(aucune)'
-        print(f'DEBUG _fill_grille: {len(eleves)} élèves, {len(existing_visible)} colonnes, cycle={cycle}')
-        print(f'DEBUG colonnes visibles: [{sample_cols}]')
         self.statusBar().showMessage(
-            f'{len(eleves)} élèves, {len(existing_visible)} col: [{sample_cols}], cycle={cycle}', 8000)
+            f'{len(eleves)} élèves, {len(existing_visible)} col, cycle={cycle}', 5000)
         if pei_config:
             self._grille.setColumnWidth(0, pei_config.student_width)
             for ci, db_name in enumerate(existing_visible):
