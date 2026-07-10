@@ -48,6 +48,9 @@ class ColorItem(QTableWidgetItem):
         super().__init__(text)
         self._bg = bg
 
+    def set_bg(self, bg: QColor | None):
+        self._bg = bg
+
     def data(self, role: int):
         if role == Qt.UserRole + 3 and self._bg is not None:
             return self._bg
@@ -1418,8 +1421,31 @@ class MainWindow(QMainWindow):
             return
         db_name = self._current_col_names[col - 1]
         item = self._grille.item(row, col)
-        item = self._grille.item(row, col)
         val = item.text().strip() if item else ''
+
+        # Recalculer le gradient pour cette cellule
+        if isinstance(item, ColorItem):
+            is_note_col = '_note_' in db_name or db_name in ('note_on_7', 'moy_on_20')
+            if is_note_col and val:
+                try:
+                    note_val = float(val)
+                except (ValueError, TypeError):
+                    item.set_bg(QColor(255, 255, 255))
+                else:
+                    cycle = self._current_cycle
+                    max_note = 8 if cycle == 'PEI' else 20
+                    half = max_note / 2
+                    clamped = max(0, min(note_val, max_note))
+                    if clamped <= half:
+                        t = clamped / half
+                        r, g, b = 255, int(100 + 155 * t), int(100 + 155 * t)
+                    else:
+                        t = (clamped - half) / half
+                        r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
+                    item.set_bg(QColor(r, g, b))
+            elif is_note_col:
+                item.set_bg(QColor(255, 255, 255))
+
         self._dirty_cells[(student_id, db_name)] = val
         self.statusBar().showMessage('Modifications non sauvegardées')
 
