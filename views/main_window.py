@@ -565,8 +565,9 @@ class MainWindow(QMainWindow):
         self._grille.setAlternatingRowColors(True)
         self._grille.setSelectionBehavior(QTableWidget.SelectItems)
         self._grille.setSelectionMode(QTableWidget.ContiguousSelection)
-        self._grille.setEditTriggers(QTableWidget.DoubleClicked)
-        self._grille.setSortingEnabled(True)
+        self._grille.setEditTriggers(
+            QTableWidget.SelectedClicked | QTableWidget.EditKeyPressed | QTableWidget.AnyKeyPressed
+        )
         self._grille.verticalHeader().setVisible(False)
 
         h.addWidget(self._grille, 1)
