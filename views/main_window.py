@@ -1292,26 +1292,14 @@ class MainWindow(QMainWindow):
                 val = eleve_notes.get(db_name, '')
                 item = QTableWidgetItem(str(val))
                 item.setTextAlignment(Qt.AlignCenter)
-                self._grille.setItem(row_idx, ci + 1, item)
 
                 # Colorier la cellule selon la note — gradient pastel
                 is_synth = (db_name == synth_display)
                 is_note_col = '_note_' in db_name or is_synth
-                if is_note_col and val:
-                    try:
-                        note_val = float(val)
-                    except (ValueError, TypeError):
-                        continue
-                    max_note = 8 if cycle == 'PEI' else 20
-                    half = max_note / 2
-                    clamped = max(0, min(note_val, max_note))
-                    if clamped <= half:
-                        t = clamped / half
-                        r, g, b = 255, int(100 + 155 * t), int(100 + 155 * t)
-                    else:
-                        t = (clamped - half) / half
-                        r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
-                    item.setBackground(QColor(r, g, b))
+                if is_note_col:
+                    item.setBackground(QColor(255, 200, 200))
+
+                self._grille.setItem(row_idx, ci + 1, item)
 
         # --- 6. Largeurs de colonnes ---
         if pei_config:
