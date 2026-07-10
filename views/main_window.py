@@ -181,7 +181,9 @@ class MainWindow(QMainWindow):
         QApplication.setStyle('Fusion')
         self.setWindowTitle('LarcProf — College Notes')
         self.resize(1200, 800)
-        self.setStyleSheet(self._STYLE)
+        self.setStyleSheet(self._STYLE + """
+            QTableWidget { background: #FFCCCC; }
+        """)
 
         # Data cache
         self._items: list[dict] = []
