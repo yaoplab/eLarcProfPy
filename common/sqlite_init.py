@@ -685,14 +685,17 @@ class SQLiteInit:
         """Met à jour sync_state.last_sync = now() et last_source pour une table métier."""
         from .database import db as _db, DBMode
         source = 'intranet' if _db.server_mode == DBMode.INTRANET else 'cloud' if _db.server_mode == DBMode.CLOUD else 'unknown'
-        cursor.execute(
-            """INSERT INTO sync_state (table_name, last_sync, last_source)
-               VALUES (?, datetime('now'), ?)
-               ON CONFLICT(table_name) DO UPDATE SET
-                   last_sync   = excluded.last_sync,
-                   last_source = excluded.last_source""",
-            (table_name, source)
-        )
+        try:
+            cursor.execute(
+                """INSERT INTO sync_state (table_name, last_sync, last_source)
+                   VALUES (?, datetime('now'), ?)
+                   ON CONFLICT(table_name) DO UPDATE SET
+                       last_sync   = excluded.last_sync,
+                       last_source = excluded.last_source""",
+                (table_name, source)
+            )
+        except Exception as e:
+            print(f'[INIT] sync_state update skipped: {e}')
 
     def _create_table_from_data(self, cursor, table_name: str, columns: list) -> None:
         """Crée une table avec des colonnes TEXT pour toutes les colonnes."""
