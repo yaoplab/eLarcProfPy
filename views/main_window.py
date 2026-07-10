@@ -1343,35 +1343,16 @@ class MainWindow(QMainWindow):
             for ci, db_name in enumerate(existing_visible):
                 val = eleve_notes.get(db_name, '')
 
-                # Colorier la cellule selon la note — gradient pastel
-                item_bg: QColor | None = None
-                is_synth = (db_name == synth_display)
-                is_note_col = '_note_' in db_name or is_synth
-                if is_note_col and val:
-                    try:
-                        note_val = float(val)
-                    except (ValueError, TypeError):
-                        pass
-                    else:
-                        max_note = 8 if cycle == 'PEI' else 20
-                        half = max_note / 2
-                        clamped = max(0, min(note_val, max_note))
-                        if clamped <= half:
-                            t = clamped / half
-                            r, g, b = 255, int(100 + 155 * t), int(100 + 155 * t)
-                        else:
-                            t = (clamped - half) / half
-                            r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
-                        item_bg = QColor(r, g, b)
-                        if ci == 0:
-                            self.statusBar().showMessage(
-                                f'Note {db_name}={note_val:.1f} -> rgb({r},{g},{b})', 5000)
+                item_bg = QColor(255, 100, 100)  # ROUGE test
 
                 item = ColorItem(str(val), item_bg)
                 item.setTextAlignment(Qt.AlignCenter)
                 self._grille.setItem(row_idx, ci + 1, item)
 
-        # --- 6. Largeurs de colonnes ---
+        # --- Diagnostic ---
+        sample_cols = ', '.join(existing_visible[:3]) if existing_visible else '(aucune)'
+        self.statusBar().showMessage(
+            f'{len(eleves)} élèves, {len(existing_visible)} col: [{sample_cols}], cycle={cycle}', 8000)
         if pei_config:
             self._grille.setColumnWidth(0, pei_config.student_width)
             for ci, db_name in enumerate(existing_visible):
