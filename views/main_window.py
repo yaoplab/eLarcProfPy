@@ -85,6 +85,8 @@ class ClipboardTable(QTableWidget):
                 c = cur_col + ci
                 if r >= self.rowCount() or c >= self.columnCount():
                     continue
+                if c == 0:
+                    continue  # colonne 0 = élève, pas de collage
                 val = val.strip()
                 item = self.item(r, c)
                 if item is None:
@@ -184,7 +186,6 @@ class MainWindow(QMainWindow):
         self._show_jgt_comment: bool = False
         self._visible_crits: dict[str, bool] = {'a': True, 'b': True, 'c': True, 'd': True}
         self._grille:         QTableWidget | None = None
-        self._frozen_table:   QTableWidget | None = None
         self._row_ids: dict[int, int] = {}  # student_id → learner table row id
         self._dirty_cells: dict[tuple[int, str], str] = {}  # (student_id, col_db_name) → new value
         self._current_table: str = ''
@@ -559,34 +560,16 @@ class MainWindow(QMainWindow):
         h.setContentsMargins(0, 0, 0, 0)
         h.setSpacing(0)
 
-        # Table gelée (colonne élève)
-        self._frozen_table = QTableWidget()
-        self._frozen_table.setColumnCount(0)
-        self._frozen_table.verticalHeader().setVisible(False)
-        self._frozen_table.horizontalHeader().setVisible(False)
-        self._frozen_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self._frozen_table.setFocusPolicy(Qt.NoFocus)
-        self._frozen_table.setSelectionMode(QTableWidget.NoSelection)
-
-        # Grille principale (données)
+        # Grille unique — colonne 0 = élève, colonnes 1..N = notes
         self._grille = ClipboardTable()
         self._grille.setAlternatingRowColors(True)
         self._grille.setSelectionBehavior(QTableWidget.SelectItems)
         self._grille.setSelectionMode(QTableWidget.ContiguousSelection)
         self._grille.setEditTriggers(QTableWidget.DoubleClicked)
+        self._grille.setSortingEnabled(True)
         self._grille.verticalHeader().setVisible(False)
-        self._grille.cellChanged.connect(self._on_cell_changed)
 
-        h.addWidget(self._frozen_table)
         h.addWidget(self._grille, 1)
-
-        # Synchronisation du scroll vertical
-        self._frozen_table.verticalScrollBar().valueChanged.connect(
-            self._grille.verticalScrollBar().setValue
-        )
-        self._grille.verticalScrollBar().valueChanged.connect(
-            self._frozen_table.verticalScrollBar().setValue
-        )
 
         return container
 
@@ -1130,11 +1113,10 @@ class MainWindow(QMainWindow):
         self._fill_grille(item, cycle, eleves)
 
     def _clear_grille(self):
-        """Vide les deux tables tout en gardant le layout."""
-        if self._frozen_table is not None:
-            self._frozen_table.setRowCount(0)
-            self._frozen_table.setColumnCount(0)
+        """Vide la grille tout en gardant le layout."""
         if self._grille is not None:
+            self._grille.setRowCount(0)
+            self._grille.setColumnCount(0)
             self._grille.setRowCount(0)
             self._grille.setColumnCount(0)
         self._visible_f.clear()
@@ -1215,13 +1197,10 @@ class MainWindow(QMainWindow):
             else:
                 display_names.append(c)
 
-        # Configurer les deux tables
-        self._frozen_table.setColumnCount(1)
-        self._frozen_table.setHorizontalHeaderLabels(['Élève'])
-        self._grille.setColumnCount(len(display_names))
-        self._grille.setHorizontalHeaderLabels(display_names)
+        # Configurer la grille unique
+        self._grille.setColumnCount(1 + len(display_names))
+        self._grille.setHorizontalHeaderLabels(['Élève'] + display_names)
         row_count = len(eleves)
-        self._frozen_table.setRowCount(row_count)
         self._grille.setRowCount(row_count)
 
         # --- 4. Charger les notes — scoped par CTS, matchées par fk_student_id ---
@@ -1263,19 +1242,19 @@ class MainWindow(QMainWindow):
                     'Données ancienne génération — relancez --mode4 pour les notes'
                 )
 
-        # --- 5. Remplir les deux tables ---
+        # --- 5. Remplir la grille ---
         for row_idx, eleve in enumerate(eleves):
-            # Table gelée — nom élève
+            # Colonne 0 : nom élève
             item_eleve = QTableWidgetItem(f"{eleve['nom']} {eleve['prenom']}")
             item_eleve.setFlags(item_eleve.flags() & ~Qt.ItemIsEditable)
-            self._frozen_table.setItem(row_idx, 0, item_eleve)
+            self._grille.setItem(row_idx, 0, item_eleve)
 
-            # Grille principale — notes
+            # Colonnes 1..N : notes
             eleve_notes = notes.get(eleve['id'], {})
             for ci, db_name in enumerate(existing_visible):
                 val = eleve_notes.get(db_name, '')
                 item = QTableWidgetItem(str(val))
-                self._grille.setItem(row_idx, ci, item)
+                self._grille.setItem(row_idx, ci + 1, item)
 
                 # Colorier la cellule selon la note
                 is_synth = (db_name == synth_display)
@@ -1304,7 +1283,7 @@ class MainWindow(QMainWindow):
 
         # --- 6. Largeurs de colonnes ---
         if pei_config:
-            self._frozen_table.setColumnWidth(0, pei_config.student_width)
+            self._grille.setColumnWidth(0, pei_config.student_width)
             for ci, db_name in enumerate(existing_visible):
                 is_obs = '_observation' in db_name or db_name == 'term_observation'
                 if is_obs:
@@ -1318,14 +1297,24 @@ class MainWindow(QMainWindow):
         self._current_col_names = existing_visible
         self._current_student_ids = [e['id'] for e in eleves]
         self._grille.cellChanged.connect(self._on_cell_changed)
+        # Largeur colonnes notes (décalage de 1 pour la colonne élève)
+        if pei_config:
+            self._grille.setColumnWidth(0, pei_config.student_width)
+            for ci, db_name in enumerate(existing_visible):
+                is_obs = '_observation' in db_name or db_name == 'term_observation'
+                if is_obs:
+                    self._grille.setColumnWidth(ci + 1, pei_config.remark_width)
+                else:
+                    self._grille.setColumnWidth(ci + 1, pei_config.note_width)
 
     def _on_cell_changed(self, row: int, col: int) -> None:
         if row < 0 or row >= len(self._current_student_ids):
             return
-        if col < 0 or col >= len(self._current_col_names):
-            return
+        if col <= 0 or col - 1 >= len(self._current_col_names):
+            return  # colonne 0 = nom élève (non-éditable)
         student_id = self._current_student_ids[row]
-        db_name = self._current_col_names[col]
+        db_name = self._current_col_names[col - 1]
+        item = self._grille.item(row, col)
         item = self._grille.item(row, col)
         val = item.text().strip() if item else ''
         self._dirty_cells[(student_id, db_name)] = val
