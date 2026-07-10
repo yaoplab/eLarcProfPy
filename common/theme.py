@@ -1,5 +1,7 @@
 """Shim vers larccommon.theme — ajoute btn_toggle_style pour LarcProf."""
 
+from PySide6.QtGui import QFont
+
 from larccommon.theme import (
     DesignTokens,
     FontScale,
