@@ -608,6 +608,7 @@ class SQLiteInit:
                 for t in BUSINESS_TABLES:
                     cursor_sqlite.execute(f'DELETE FROM "{t}"')
                     cursor_sqlite.execute(f'DELETE FROM "{t}_ref"')
+                print(f'[INIT] DELETED all rows from {len(BUSINESS_TABLES)} business tables')
 
                 # Helper : peupler une paire (table, table_ref) avec les mêmes données serveur
                 # et mettre à jour sync_state pour cette table.
@@ -682,6 +683,7 @@ class SQLiteInit:
     def _create_table_from_data(self, cursor, table_name: str, columns: list) -> None:
         """Crée une table avec des colonnes TEXT pour toutes les colonnes."""
         # Supprimer la table existante avant de la recréer
+        print(f'[INIT] DROP TABLE IF EXISTS "{table_name}"')
         cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')
         # Vérifier si la colonne 'id' est déjà présente dans les colonnes
         has_id = any(col.lower() == 'id' for col in columns)
@@ -695,6 +697,7 @@ class SQLiteInit:
 
     def _insert_rows_from_data(self, cursor, table_name: str, columns: list, rows: list) -> None:
         """Insère les lignes dans la table en utilisant INSERT OR REPLACE."""
+        print(f'[INIT] INSERT {len(rows)} rows into "{table_name}" ({len(columns)} cols)')
         if not rows:
             msg = f"_insert_rows_from_data: aucune ligne pour {table_name}"
             _log(msg)
