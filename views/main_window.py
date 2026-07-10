@@ -609,10 +609,9 @@ class MainWindow(QMainWindow):
             QTableWidget.SelectedClicked | QTableWidget.EditKeyPressed | QTableWidget.AnyKeyPressed
         )
         self._grille.setSortingEnabled(True)
-        self._grille.setStyleSheet(f"QTableWidget::item {{ padding: {ds.space_xxs}px {ds.space_xs}px; }}")
         self._grille.verticalHeader().setVisible(False)
         self._grille.horizontalHeader().sectionClicked.connect(self._on_header_section_clicked)
-        self._grille.setItemDelegate(ColorDelegate(self._grille))
+        self._grille.setItemDelegate(ColorDelegate())
 
         h.addWidget(self._grille, 1)
 
