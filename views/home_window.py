@@ -769,7 +769,7 @@ class HomeWindow(QMainWindow):
     def _open_main_window(self, focus: str = 'notes') -> None:
         from views.main_window import MainWindow
         self._main_window = MainWindow()
-        self._main_window.show()
+        self._main_window.showMaximized()
         self.hide()
         self._poll_main_visible = QTimer(self)
         self._poll_main_visible.timeout.connect(self._check_main_visible)

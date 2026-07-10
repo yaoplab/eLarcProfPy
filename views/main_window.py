@@ -9,7 +9,6 @@ from functools import partial
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QColor, QAction, QKeySequence
-from larccommon.design_system import ds
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -21,18 +20,37 @@ from PySide6.QtWidgets import (
     QMenu,
     QPushButton,
     QScrollArea,
-    QStatusBar,
+    QSizePolicy,
+    QStyledItemDelegate,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
+from larccommon.design_system import ds
+
+
 
 from common.database import db
 from common.session import session
 from common.theme import theme_manager
 from common.grid_config import pei_config
 from views.eval_manager import EvalManagerWindow
+
+
+
+
+class ColorDelegate(QStyledItemDelegate):
+    """Delegate qui peint le fond des cellules depuis le BackgroundRole."""
+    def paint(self, painter, option, index):
+        self.initStyleOption(option, index)
+        bg = index.data(Qt.BackgroundRole)
+        if bg:
+            painter.save()
+            painter.fillRect(option.rect, bg)
+            painter.restore()
+            option.backgroundBrush = QColor(Qt.transparent)
+        super().paint(painter, option, index)
 
 
 class ClipboardTable(QTableWidget):
@@ -159,6 +177,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        QApplication.setStyle('Fusion')
         self.setWindowTitle('LarcProf — College Notes')
         self.resize(1200, 800)
         self.setStyleSheet(self._STYLE)
@@ -573,6 +592,7 @@ class MainWindow(QMainWindow):
         self._grille.setStyleSheet(f"QTableWidget::item {{ padding: {ds.space_xxs}px {ds.space_xs}px; }}")
         self._grille.verticalHeader().setVisible(False)
         self._grille.horizontalHeader().sectionClicked.connect(self._on_header_section_clicked)
+        self._grille.setItemDelegate(ColorDelegate())  # Fond de cellule sous Fusion
 
         h.addWidget(self._grille, 1)
 
