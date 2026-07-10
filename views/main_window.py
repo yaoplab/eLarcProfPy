@@ -655,16 +655,21 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     def _on_sync(self) -> None:
         """Synchronise avec le serveur, ou sauvegarde locale si hors ligne."""
+        print(f'[SYNC] Début — sauvegarde locale...')
         self._save_grid_edits()
         from common.sync import sync
         from common.database import db as _db
+        print(f'[SYNC] Serveur connecté: {_db.is_server_connected}')
         if not _db.is_server_connected:
+            print('[SYNC] Hors ligne — rien à synchroniser')
             self.statusBar().showMessage('Hors ligne — données enregistrées en local')
             return
         self.statusBar().showMessage('Synchronisation en cours...')
+        print('[SYNC] pull_push en cours...')
         QApplication.processEvents()
         try:
             report = sync.pull_push()
+            print(f'[SYNC] Résultat: {report.summary()}')
             if report.has_errors:
                 self.statusBar().showMessage(f'Synchro terminée avec erreurs: {report.summary()}')
             elif report.has_conflicts:
@@ -672,21 +677,27 @@ class MainWindow(QMainWindow):
             else:
                 self.statusBar().showMessage(f'Synchro terminée: {report.summary()}')
         except Exception as e:
+            print(f'[SYNC] Erreur: {e}')
             self.statusBar().showMessage(f'Erreur de synchronisation: {e}')
 
     def _on_save_and_quit(self) -> None:
         """Enregistre les notes, synchronise et quitte."""
+        print('[SAVE-QUIT] Sauvegarde locale...')
         self._save_grid_edits()
         from common.sync import sync
         from common.database import db as _db
+        print(f'[SAVE-QUIT] Serveur connecté: {_db.is_server_connected}')
         if _db.is_server_connected:
             self.statusBar().showMessage('Synchronisation avant fermeture...')
             QApplication.processEvents()
             try:
                 report = sync.pull_push()
+                print(f'[SAVE-QUIT] Synchro: {report.summary()}')
                 self.statusBar().showMessage(f'Synchro: {report.summary()}')
             except Exception as e:
+                print(f'[SAVE-QUIT] Erreur synchro: {e}')
                 self.statusBar().showMessage(f'Erreur synchro: {e}')
+        print('[SAVE-QUIT] Fermeture')
         self.close()
 
     # ------------------------------------------------------------------
@@ -1445,6 +1456,7 @@ class MainWindow(QMainWindow):
                 item.set_bg(QColor(255, 255, 255))
 
         self._dirty_cells[(student_id, db_name)] = val
+        print(f'[CELL] student={student_id} {db_name}={val} ({len(self._dirty_cells)} dirty)')
         self.statusBar().showMessage('Modifications non sauvegardées')
 
     def _on_header_section_clicked(self, col: int) -> None:
@@ -1468,6 +1480,7 @@ class MainWindow(QMainWindow):
         table = getattr(self, '_current_table', None)
         if table is None:
             return 0
+        print(f'[SAVE] {len(self._dirty_cells)} cellules à sauvegarder dans {table}')
         saved = 0
         try:
             for (student_id, db_name), val in list(self._dirty_cells.items()):
@@ -1481,9 +1494,11 @@ class MainWindow(QMainWindow):
                 saved += 1
             conn.commit()
             self._dirty_cells.clear()
+            print(f'[SAVE] {saved} cellule(s) sauvegardée(s)')
             if saved:
                 self.statusBar().showMessage(f'{saved} cellule(s) sauvegardée(s)')
         except Exception as e:
+            print(f'[SAVE] Erreur: {e}')
             self.statusBar().showMessage(f'Erreur sauvegarde: {e}')
         return saved
 
