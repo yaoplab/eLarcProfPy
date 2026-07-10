@@ -77,6 +77,20 @@ class ThemeManagerWrapper:
     def btn_toggle_style(self, checked: bool, height: int = 22) -> str:
         return btn_toggle_style(checked, height)
 
+    def btn_crit_style(self, checked: bool) -> str:
+        p = self._original.palette
+        if checked:
+            return (
+                f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; border: none; "
+                f"border-radius: 4px; padding: 0 8px; height: 22px; font-weight: bold; }}"
+            )
+        return (
+            f"QPushButton {{ background: transparent; color: {p.text_strong}; "
+            f"border: 1px solid {p.outline_variant}; border-radius: 4px; "
+            f"padding: 0 8px; height: 22px; }}"
+            f"QPushButton:hover {{ background: {p.surface_variant}; }}"
+        )
+
 
 theme_manager = ThemeManagerWrapper()
 __all__ = [
