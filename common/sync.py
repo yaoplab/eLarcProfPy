@@ -192,6 +192,8 @@ class SyncManager:
                 report.pushed += pushes
                 report.conflicts.extend(conflicts)
 
+                local_conn.commit()
+
                 # Mettre à jour sync_state si pas de conflits
                 if not conflicts:
                     self.touch_sync_state(table)
@@ -325,8 +327,6 @@ class SyncManager:
                 f'UPDATE "{ref_table}" SET "{col}" = ? WHERE id = ?',
                 (_to_sqlite(val), row_id)
             )
-            local_conn.commit()
-            _log(f"SyncManager.apply_pull: {table}.{col}[{row_id}] = {val}")
         except Exception as e:
             _log(f"SyncManager.apply_pull: erreur {table}.{col}[{row_id}]: {e}")
             raise
