@@ -1345,27 +1345,29 @@ class MainWindow(QMainWindow):
 
                 item_bg: QColor | None = None
 
-                # Gradient pastel si colonne note avec valeur
                 is_synth = (db_name == synth_display)
                 is_note_col = '_note_' in db_name or is_synth
-                if is_note_col and val:
-                    try:
-                        note_val = float(val)
-                    except (ValueError, TypeError):
-                        pass
-                    else:
-                        max_note = 8 if cycle == 'PEI' else 20
-                        half = max_note / 2
-                        clamped = max(0, min(note_val, max_note))
-                        if clamped <= half:
-                            t = clamped / half
-                            r, g, b = 255, int(100 + 155 * t), int(100 + 155 * t)
+                if is_note_col:
+                    if val:
+                        try:
+                            note_val = float(val)
+                        except (ValueError, TypeError):
+                            item_bg = QColor(255, 255, 255)  # blanc si valeur invalide
                         else:
-                            t = (clamped - half) / half
-                            r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
-                        item_bg = QColor(r, g, b)
-                        if row_idx == 0 and ci == 0:
-                            print(f'DEBUG gradient: {db_name}={val} -> is_note={is_note_col} {is_synth} bg=({r},{g},{b})')
+                            max_note = 8 if cycle == 'PEI' else 20
+                            half = max_note / 2
+                            clamped = max(0, min(note_val, max_note))
+                            if clamped <= half:
+                                t = clamped / half
+                                r, g, b = 255, int(100 + 155 * t), int(100 + 155 * t)
+                            else:
+                                t = (clamped - half) / half
+                                r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
+                            item_bg = QColor(r, g, b)
+                            if row_idx == 0 and ci == 0:
+                                print(f'DEBUG gradient: {db_name}={val} -> is_note={is_note_col} {is_synth} bg=({r},{g},{b})')
+                    else:
+                        item_bg = QColor(255, 255, 255)  # blanc si vide
 
                 item = ColorItem(str(val), item_bg)
                 item.setTextAlignment(Qt.AlignCenter)
@@ -1387,8 +1389,8 @@ class MainWindow(QMainWindow):
                     self._grille.setColumnWidth(ci, pei_config.note_width)
 
         try:
-            self._grille.cellChanged.disconnect()
-        except (TypeError, RuntimeError):
+            self._grille.cellChanged.disconnect(self._on_cell_changed)
+        except Exception:
             pass
         # Stocker pour la sauvegarde (sans colonne élève)
         self._current_table = table
