@@ -1364,6 +1364,8 @@ class MainWindow(QMainWindow):
                             t = (clamped - half) / half
                             r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
                         item_bg = QColor(r, g, b)
+                        if row_idx == 0 and ci == 0:
+                            print(f'DEBUG gradient: {db_name}={val} -> is_note={is_note_col} {is_synth} bg=({r},{g},{b})')
 
                 item = ColorItem(str(val), item_bg)
                 item.setTextAlignment(Qt.AlignCenter)
@@ -1371,6 +1373,8 @@ class MainWindow(QMainWindow):
 
         # --- Diagnostic ---
         sample_cols = ', '.join(existing_visible[:3]) if existing_visible else '(aucune)'
+        print(f'DEBUG _fill_grille: {len(eleves)} élèves, {len(existing_visible)} colonnes, cycle={cycle}')
+        print(f'DEBUG colonnes visibles: [{sample_cols}]')
         self.statusBar().showMessage(
             f'{len(eleves)} élèves, {len(existing_visible)} col: [{sample_cols}], cycle={cycle}', 8000)
         if pei_config:
@@ -1382,7 +1386,10 @@ class MainWindow(QMainWindow):
                 else:
                     self._grille.setColumnWidth(ci, pei_config.note_width)
 
-        self._grille.cellChanged.disconnect()
+        try:
+            self._grille.cellChanged.disconnect()
+        except (TypeError, RuntimeError):
+            pass
         # Stocker pour la sauvegarde (sans colonne élève)
         self._current_table = table
         self._current_col_names = existing_visible
