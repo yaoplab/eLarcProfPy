@@ -167,9 +167,14 @@ class SyncManager:
 
         _log("SyncManager.pull_push: démarrage de la synchro")
 
+        import time
         for table in BUSINESS_TABLES:
             try:
+                t0 = time.time()
                 diffs = list(self.compute_cell_diff(table))
+                dt = time.time() - t0
+                print(f'[SYNC] {table}: {len(diffs)} diffs in {dt:.1f}s')
+                _log(f"SyncManager: {table} — {len(diffs)} diffs, computing took {dt:.1f}s")
                 if not diffs:
                     _log(f"SyncManager: {table} — aucune divergence")
                     continue
