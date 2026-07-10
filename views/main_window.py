@@ -1363,6 +1363,9 @@ class MainWindow(QMainWindow):
                             t = (clamped - half) / half
                             r, g, b = int(255 - 155 * t), 255, int(255 - 155 * t)
                         item_bg = QColor(r, g, b)
+                        if ci == 0:
+                            self.statusBar().showMessage(
+                                f'Note {db_name}={note_val:.1f} -> rgb({r},{g},{b})', 5000)
 
                 item = ColorItem(str(val), item_bg)
                 item.setTextAlignment(Qt.AlignCenter)
