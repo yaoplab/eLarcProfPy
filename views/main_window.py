@@ -1132,10 +1132,27 @@ class MainWindow(QMainWindow):
 
         visible_db_cols: list[str] = []
 
+        # Lookup rapide critères par évaluation
+        _eval_crits: dict[str, dict[int, dict[str, bool]]] = {'F': {}, 'S': {}}
+        for et, evals in (('F', self._evals_f), ('S', self._evals_s)):
+            for e in evals:
+                _eval_crits[et][e['index']] = {
+                    'a': e.get('crit_a', '0') == '1',
+                    'b': e.get('crit_b', '0') == '1',
+                    'c': e.get('crit_c', '0') == '1',
+                    'd': e.get('crit_d', '0') == '1',
+                }
+
+        def _crit_visible(eval_type: str, idx: int, crit: str) -> bool:
+            if not self._visible_crits.get(crit, False):
+                return False
+            ec = _eval_crits.get(eval_type, {}).get(idx, {})
+            return ec.get(crit, False)
+
         # Colonnes des slots formatives visibles
         for slot_idx in sorted(self._visible_f):
             for crit in ('a', 'b', 'c', 'd'):
-                if self._visible_crits[crit]:
+                if _crit_visible('F', slot_idx, crit):
                     db_name = f'f{slot_idx:02d}_note_{crit}'
                     visible_db_cols.append(db_name)
             if self._show_f_comment:
@@ -1144,7 +1161,7 @@ class MainWindow(QMainWindow):
         # Colonnes des slots sommatives visibles
         for slot_idx in sorted(self._visible_s):
             for crit in ('a', 'b', 'c', 'd'):
-                if self._visible_crits[crit]:
+                if _crit_visible('S', slot_idx, crit):
                     db_name = f's{slot_idx:02d}_note_{crit}'
                     visible_db_cols.append(db_name)
             if self._show_s_comment:
