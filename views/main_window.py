@@ -637,12 +637,14 @@ class MainWindow(QMainWindow):
         h = QHBoxLayout(bar)
         h.setContentsMargins(0, 0, 0, 0)
         h.addStretch(1)
-        self._sync_btn = QPushButton('Synchroniser')
-        self._sync_btn.setEnabled(db.is_server_connected)
-        self._sync_btn.setToolTip('Synchronise les données locales avec le serveur')
+        online = db.is_server_connected
+        self._sync_btn = QPushButton('Synchroniser' if online else 'Enregistrer')
+        self._sync_btn.setToolTip(
+            'Synchronise avec le serveur' if online else 'Enregistre les modifications en local')
         self._sync_btn.clicked.connect(self._on_sync)
         self._save_btn = QPushButton('Enregistrer et quitter')
-        self._save_btn.setToolTip('Enregistre les modifications et quitte')
+        self._save_btn.setToolTip('Enregistre les modifications et quitte'
+                                  + (' (synchronise avant)' if online else ' (hors ligne)'))
         self._save_btn.clicked.connect(self._on_save_and_quit)
         h.addWidget(self._sync_btn)
         h.addWidget(self._save_btn)
@@ -652,12 +654,12 @@ class MainWindow(QMainWindow):
     # Actions
     # ------------------------------------------------------------------
     def _on_sync(self) -> None:
-        """Sauvegarde les notes puis déclenche la synchronisation."""
-        self._save_grid_edits()
+        """Synchronise avec le serveur, ou sauvegarde locale si hors ligne."""
+        saved = self._save_grid_edits()
         from common.sync import sync
         from common.database import db as _db
         if not _db.is_server_connected:
-            self.statusBar().showMessage('Aucune connexion serveur disponible')
+            self.statusBar().showMessage(f'{saved} modification(s) enregistrée(s) en local')
             return
         self.statusBar().showMessage('Synchronisation en cours...')
         QApplication.processEvents()
