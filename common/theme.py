@@ -91,6 +91,9 @@ class ThemeManagerWrapper:
             f"QPushButton:hover {{ background: {p.surface_variant}; }}"
         )
 
+    def set_font_multiplier(self, mult: float):
+        self._original._theme.fonts.multiplier = mult
+
 
 theme_manager = ThemeManagerWrapper()
 __all__ = [
