@@ -1175,22 +1175,33 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
+        def _nature_for_prefix(col_name: str, idx: int) -> str:
+            evals = self._evals_f if col_name.startswith('f') else self._evals_s
+            for e in evals:
+                if e['index_eval'] == idx:
+                    return e.get('nature', '') or ''
+            return ''
+
         existing_visible = [c for c in visible_db_cols if c in existing_db_cols]
 
-        # --- 3. Noms d'affichage (sans la colonne élève — elle est dans frozen_table) ---
+        # --- 3. Noms d'affichage ---
         display_names = []
         for c in existing_visible:
             if c.startswith('f') and '_note_' in c:
+                parts = c.split('_')
                 if c.endswith('_nature') or 'nature' in c:
-                    display_names.append('Nature')
+                    idx = int(parts[0][1:]) if parts[0][1:].isdigit() else 0
+                    nat = _nature_for_prefix(c, idx)
+                    display_names.append(nat if nat else 'Nature')
                 else:
-                    parts = c.split('_')
                     display_names.append(f'F{parts[0][1:]}_{parts[-1].upper()}')
             elif c.startswith('s') and '_note_' in c:
+                parts = c.split('_')
                 if c.endswith('_nature') or 'nature' in c:
-                    display_names.append('Nature')
+                    idx = int(parts[0][1:]) if parts[0][1:].isdigit() else 0
+                    nat = _nature_for_prefix(c, idx)
+                    display_names.append(nat if nat else 'Nature')
                 else:
-                    parts = c.split('_')
                     display_names.append(f'S{parts[0][1:]}_{parts[-1].upper()}')
             elif c.startswith('jgt_'):
                 display_names.append(f'Jgt {c[-1].upper()}')
