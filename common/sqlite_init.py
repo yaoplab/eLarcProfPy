@@ -361,6 +361,20 @@ class SQLiteInit:
         _log("Tables SQLite créées/vérifiées avec succès (Intranet).")
         print("Tables SQLite créées/vérifiées avec succès (Intranet).")
 
+        # Migration : recréer sync_state si schéma ancien (pas de table_name)
+        try:
+            conn.execute("SELECT table_name FROM sync_state LIMIT 1")
+        except Exception:
+            conn.execute("DROP TABLE IF EXISTS sync_state")
+            conn.execute("""
+                CREATE TABLE sync_state (
+                    table_name  TEXT PRIMARY KEY,
+                    last_sync   TEXT,
+                    last_source TEXT
+                )
+            """)
+            conn.commit()
+
         # Migration : colonnes module_config (theme, font_scale)
         self._migrate_columns(conn, 'module_config', [
             ('theme_name', 'TEXT DEFAULT \'material_light\''),
