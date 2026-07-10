@@ -8,7 +8,7 @@ from __future__ import annotations
 from functools import partial
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QFont, QColor, QAction, QKeySequence
+from PySide6.QtGui import QFont, QColor, QAction, QKeySequence, QPalette
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QStatusBar,
+    QStyle,
     QStyledItemDelegate,
     QTableWidget,
     QTableWidgetItem,
@@ -42,16 +43,32 @@ from views.eval_manager import EvalManagerWindow
 
 
 class ColorDelegate(QStyledItemDelegate):
-    """Delegate qui peint le fond des cellules depuis le BackgroundRole."""
+    """Delegate: peint le fond depuis BackgroundRole, puis le texte par-dessus."""
     def paint(self, painter, option, index):
         self.initStyleOption(option, index)
         bg = index.data(Qt.BackgroundRole)
+
+        # Fond
+        painter.save()
         if bg:
-            painter.save()
             painter.fillRect(option.rect, bg)
+        painter.restore()
+
+        # Sélection
+        if option.state & QStyle.State_Selected:
+            painter.save()
+            c = option.palette.highlight().color()
+            c.setAlpha(80)
+            painter.fillRect(option.rect, c)
             painter.restore()
-            option.backgroundBrush = QColor(Qt.transparent)
-        super().paint(painter, option, index)
+
+        # Texte centré avec padding design system
+        painter.save()
+        painter.setFont(option.font)
+        painter.setPen(option.palette.color(QPalette.Text))
+        trect = option.rect.adjusted(8, 4, -8, -4)
+        painter.drawText(trect, Qt.AlignCenter, option.text)
+        painter.restore()
 
 
 class ClipboardTable(QTableWidget):
@@ -181,9 +198,7 @@ class MainWindow(QMainWindow):
         QApplication.setStyle('Fusion')
         self.setWindowTitle('LarcProf — College Notes')
         self.resize(1200, 800)
-        self.setStyleSheet(self._STYLE + """
-            QTableWidget { background: #FFCCCC; }
-        """)
+        self.setStyleSheet(self._STYLE)
 
         # Data cache
         self._items: list[dict] = []
@@ -595,6 +610,7 @@ class MainWindow(QMainWindow):
         self._grille.setStyleSheet(f"QTableWidget::item {{ padding: {ds.space_xxs}px {ds.space_xs}px; }}")
         self._grille.verticalHeader().setVisible(False)
         self._grille.horizontalHeader().sectionClicked.connect(self._on_header_section_clicked)
+        self._grille.setItemDelegate(ColorDelegate(self._grille))
 
         h.addWidget(self._grille, 1)
 
