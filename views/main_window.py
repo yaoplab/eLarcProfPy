@@ -52,6 +52,8 @@ class ColorDelegate(QStyledItemDelegate):
         painter.save()
         if bg:
             painter.fillRect(option.rect, bg)
+        else:
+            painter.fillRect(option.rect, QColor(230, 230, 230))  # gris si pas de fond
         painter.restore()
 
         # Sélection
