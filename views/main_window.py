@@ -9,6 +9,7 @@ from functools import partial
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QColor, QAction, QKeySequence
+from larccommon.design_system import ds
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -569,7 +570,7 @@ class MainWindow(QMainWindow):
             QTableWidget.SelectedClicked | QTableWidget.EditKeyPressed | QTableWidget.AnyKeyPressed
         )
         self._grille.setSortingEnabled(True)
-        self._grille.setStyleSheet("QTableWidget::item { padding: 4px 8px; }")
+        self._grille.setStyleSheet(f"QTableWidget::item {{ padding: {ds.space_xxs}px {ds.space_xs}px; }}")
         self._grille.verticalHeader().setVisible(False)
         self._grille.horizontalHeader().sectionClicked.connect(self._on_header_section_clicked)
 
