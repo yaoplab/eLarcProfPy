@@ -2,23 +2,33 @@ import os
 import shutil
 from typing import Optional
 
-from PySide6.QtGui import QPixmap, QFont
+from larccommon.l10n import Translator, _
+from phibuilder.phi.scale import SpacingToken
+from PySide6.QtCore import Q_ARG, QMetaObject, Qt, QThread, QTimer, Signal
+from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
-    QTabWidget, QLabel, QLineEdit, QPushButton, QStatusBar,
-    QMessageBox, QFileDialog, QPlainTextEdit, QApplication, QFrame,
+    QApplication,
+    QFileDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPlainTextEdit,
+    QPushButton,
+    QStatusBar,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt, QThread, Signal, QMetaObject, Q_ARG, QTimer
 
-from common.session import AuthResult, ConnMode, UserRole, session
-from common.network import NetworkMode, detect_network, network_mode_color
-from common.database import db, DBMode
 from common.auth import AuthManager, OAuth2Manager
+from common.database import DBMode, db
+from common.network import NetworkMode, detect_network, network_mode_color
+from common.session import AuthResult, ConnMode, UserRole, session
 from common.sqlite_init import sqlite_init
 from common.theme import theme_manager
-
-from phibuilder.phi.scale import SpacingToken
-from larccommon.l10n import Translator, _
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +54,6 @@ class _Worker(QThread):
 # Login window
 # ---------------------------------------------------------------------------
 class LoginWindow(QMainWindow):
-
     @property
     def _STYLE(self) -> str:
         p = theme_manager.theme.palette
@@ -194,9 +203,27 @@ class LoginWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         import os
-        lang = os.environ.get('LARC_LANG', 'fr')
+
+        lang = os.environ.get("LARC_LANG", "fr")
         trans = Translator.instance(lang)
         trans.load_dir(Translator.l10n_dir())
+
+        # Charger les préférences
+        from PySide6.QtCore import QSettings
+
+        s = QSettings("Larc", "LarcProf")
+        saved_theme = s.value("theme_pref", "")
+        if saved_theme and saved_theme in (
+            "default",
+            "material_light",
+            "material_dark",
+            "nature",
+            "blue",
+            "dark",
+            "sobre",
+            "contrast",
+        ):
+            theme_manager.set_active(saved_theme)
 
         self._worker: Optional[_Worker] = None
         self._net_mode: Optional[NetworkMode] = None
@@ -214,21 +241,22 @@ class LoginWindow(QMainWindow):
     # ------------------------------------------------------------------
     def _setup_ui(self) -> None:
         sp = self._sp
-        self.setWindowTitle(_('prof_login.window_title'))
+        self.setWindowTitle(_("prof_login.window_title"))
         self.setMinimumSize(420, 680)
         self.resize(480, 780)
         self.setStyleSheet(self._STYLE)
 
         root = QWidget()
-        root.setObjectName('root')
+        root.setObjectName("root")
         self.setCentralWidget(root)
         outer = QVBoxLayout(root)
-        outer.setContentsMargins(sp(SpacingToken.SM), sp(SpacingToken.SM),
-                                 sp(SpacingToken.SM), sp(SpacingToken.SM))
+        outer.setContentsMargins(
+            sp(SpacingToken.SM), sp(SpacingToken.SM), sp(SpacingToken.SM), sp(SpacingToken.SM)
+        )
         outer.setSpacing(sp(SpacingToken.SM))
 
         # Logo
-        logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'img', 'logoAEC.png')
+        logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "img", "logoAEC.png")
         if os.path.exists(logo_path):
             pix = QPixmap(logo_path)
             logo = QLabel()
@@ -244,11 +272,11 @@ class LoginWindow(QMainWindow):
         net_layout.setContentsMargins(sp(SpacingToken.SM), 2, sp(SpacingToken.SM), 2)
         net_layout.setSpacing(sp(SpacingToken.MD))
         net_layout.addStretch()
-        self._intra_indicator = QLabel(_('login.status.intranet'))
-        self._intra_indicator.setFont(QFont('Segoe UI', theme_manager.font_size(11)))
+        self._intra_indicator = QLabel(_("login.status.intranet"))
+        self._intra_indicator.setFont(QFont("Segoe UI", theme_manager.font_size(11)))
         net_layout.addWidget(self._intra_indicator)
-        self._cloud_indicator = QLabel(_('login.status.cloud'))
-        self._cloud_indicator.setFont(QFont('Segoe UI', theme_manager.font_size(11)))
+        self._cloud_indicator = QLabel(_("login.status.cloud"))
+        self._cloud_indicator.setFont(QFont("Segoe UI", theme_manager.font_size(11)))
         net_layout.addWidget(self._cloud_indicator)
         outer.addWidget(self._net_row)
 
@@ -260,7 +288,7 @@ class LoginWindow(QMainWindow):
         outer.addWidget(self._tabs, 1)
 
         self._err_lbl = QLabel()
-        self._err_lbl.setProperty('class', 'error-text')
+        self._err_lbl.setProperty("class", "error-text")
         self._err_lbl.setWordWrap(True)
         self._err_lbl.hide()
         outer.addWidget(self._err_lbl)
@@ -268,7 +296,7 @@ class LoginWindow(QMainWindow):
         self._log_area = QPlainTextEdit()
         self._log_area.setReadOnly(True)
         self._log_area.setMaximumHeight(70)
-        self._log_area.setPlaceholderText('Messages de progression…')
+        self._log_area.setPlaceholderText("Messages de progression…")
         self._log_area.hide()
         outer.addWidget(self._log_area)
 
@@ -277,18 +305,20 @@ class LoginWindow(QMainWindow):
         self._bottom_indicator.setWordWrap(True)
         p = theme_manager.theme.palette
         self._bottom_indicator.setStyleSheet(
-            f'color: {p.text_strong}; font-size: {theme_manager.font_size(13)}px; font-weight: bold;'
-            f'padding: {sp(SpacingToken.SM)}px {sp(SpacingToken.MD)}px;'
+            f"color: {p.text_strong}; font-size: {theme_manager.font_size(13)}px; font-weight: bold;"
+            f"padding: {sp(SpacingToken.SM)}px {sp(SpacingToken.MD)}px;"
         )
         outer.addWidget(self._bottom_indicator)
 
         sb = QStatusBar()
         self.setStatusBar(sb)
-        self._net_txt = QLabel('Détection du réseau')
-        self._net_txt.setStyleSheet(f'font-size: 11px; color: {p.text_soft};')
+        self._net_txt = QLabel("Détection du réseau")
+        self._net_txt.setStyleSheet(f"font-size: 11px; color: {p.text_soft};")
         self._net_txt.setContentsMargins(13, 0, 0, 0)
-        self._dot_lbl = QLabel('●')
-        self._dot_lbl.setStyleSheet(f'color: {p.inactive}; font-size: {theme_manager.font_size(14)}px;')
+        self._dot_lbl = QLabel("●")
+        self._dot_lbl.setStyleSheet(
+            f"color: {p.inactive}; font-size: {theme_manager.font_size(14)}px;"
+        )
         sb.addWidget(self._net_txt)
         sb.addWidget(self._dot_lbl)
 
@@ -296,18 +326,19 @@ class LoginWindow(QMainWindow):
         sp = self._sp
 
         header = QFrame()
-        header.setObjectName('header')
+        header.setObjectName("header")
         header.setMinimumHeight(55)
         h = QHBoxLayout(header)
-        h.setContentsMargins(sp(SpacingToken.MD), sp(SpacingToken.SM),
-                             sp(SpacingToken.MD), sp(SpacingToken.SM))
+        h.setContentsMargins(
+            sp(SpacingToken.MD), sp(SpacingToken.SM), sp(SpacingToken.MD), sp(SpacingToken.SM)
+        )
 
-        title_font = QFont('Segoe UI', theme_manager.font_size(14), QFont.Bold)
-        meta_font = QFont('Segoe UI', theme_manager.font_size(11))
+        title_font = QFont("Segoe UI", theme_manager.font_size(14), QFont.Bold)
+        meta_font = QFont("Segoe UI", theme_manager.font_size(11))
 
-        title = QLabel(_('prof_login.title'))
+        title = QLabel(_("prof_login.title"))
         title.setFont(title_font)
-        sub = QLabel(_('prof_login.subtitle'))
+        sub = QLabel(_("prof_login.subtitle"))
         sub.setFont(meta_font)
 
         text_col = QVBoxLayout()
@@ -324,15 +355,17 @@ class LoginWindow(QMainWindow):
         sp = self._sp
         tab = QWidget()
         outer = QVBoxLayout(tab)
-        outer.setContentsMargins(sp(SpacingToken.SM), sp(SpacingToken.SM),
-                                 sp(SpacingToken.SM), sp(SpacingToken.SM))
+        outer.setContentsMargins(
+            sp(SpacingToken.SM), sp(SpacingToken.SM), sp(SpacingToken.SM), sp(SpacingToken.SM)
+        )
         outer.setSpacing(sp(SpacingToken.SM))
 
         panel = QFrame()
-        panel.setProperty('class', 'panel')
+        panel.setProperty("class", "panel")
         inner = QVBoxLayout(panel)
-        inner.setContentsMargins(sp(SpacingToken.MD), sp(SpacingToken.MD),
-                                 sp(SpacingToken.MD), sp(SpacingToken.MD))
+        inner.setContentsMargins(
+            sp(SpacingToken.MD), sp(SpacingToken.MD), sp(SpacingToken.MD), sp(SpacingToken.MD)
+        )
         inner.setSpacing(sp(SpacingToken.SM))
 
         outer.addWidget(panel)
@@ -342,140 +375,140 @@ class LoginWindow(QMainWindow):
         sp = self._sp
         tab, layout, _outer = self._tab_widget()
 
-        title = QLabel(_('login.tab_intranet'))
-        title.setProperty('class', 'section-title')
+        title = QLabel(_("login.tab_intranet"))
+        title.setProperty("class", "section-title")
         layout.addWidget(title)
 
         self._edt_i_email = QLineEdit()
-        self._edt_i_email.setPlaceholderText(_('login.email_placeholder'))
+        self._edt_i_email.setPlaceholderText(_("login.email_placeholder"))
         layout.addWidget(self._edt_i_email)
 
         self._edt_i_pass = QLineEdit()
         self._edt_i_pass.setEchoMode(QLineEdit.Password)
-        self._edt_i_pass.setPlaceholderText(_('login.password_placeholder'))
+        self._edt_i_pass.setPlaceholderText(_("login.password_placeholder"))
         layout.addWidget(self._edt_i_pass)
 
         btn_row = QHBoxLayout()
         btn_row.setSpacing(sp(SpacingToken.SM))
 
-        self._btn_intra = QPushButton(_('login.connect_intranet'))
-        self._btn_intra.setProperty('class', 'btn-primary')
+        self._btn_intra = QPushButton(_("login.connect_intranet"))
+        self._btn_intra.setProperty("class", "btn-primary")
         self._btn_intra.clicked.connect(self._on_intranet)
         self._edt_i_pass.returnPressed.connect(self._btn_intra.click)
         btn_row.addWidget(self._btn_intra, 1)
 
-        self._btn_change_pwd_intra = QPushButton(_('prof_login.change_password'))
-        self._btn_change_pwd_intra.setProperty('class', 'btn-secondary')
+        self._btn_change_pwd_intra = QPushButton(_("prof_login.change_password"))
+        self._btn_change_pwd_intra.setProperty("class", "btn-secondary")
         self._btn_change_pwd_intra.clicked.connect(self._on_change_password)
         btn_row.addWidget(self._btn_change_pwd_intra)
 
         layout.addLayout(btn_row)
         layout.addStretch()
-        self._tabs.addTab(tab, _('login.tab_intranet'))
+        self._tabs.addTab(tab, _("login.tab_intranet"))
 
     def _build_cloud_tab(self) -> None:
         tab, layout, _outer = self._tab_widget()
 
-        title = QLabel(_('login.tab_cloud'))
-        title.setProperty('class', 'section-title')
+        title = QLabel(_("login.tab_cloud"))
+        title.setProperty("class", "section-title")
         layout.addWidget(title)
 
-        info = QLabel(_('prof_login.info_cloud'))
-        info.setProperty('class', 'info-text')
+        info = QLabel(_("prof_login.info_cloud"))
+        info.setProperty("class", "info-text")
         info.setAlignment(Qt.AlignCenter)
         info.setWordWrap(True)
         layout.addWidget(info)
 
-        self._btn_google = QPushButton(_('login.connect_google'))
-        self._btn_google.setProperty('class', 'btn-google')
+        self._btn_google = QPushButton(_("login.connect_google"))
+        self._btn_google.setProperty("class", "btn-google")
         self._btn_google.clicked.connect(self._on_cloud)
         layout.addWidget(self._btn_google)
 
         layout.addStretch()
-        self._tabs.addTab(tab, _('login.tab_cloud'))
+        self._tabs.addTab(tab, _("login.tab_cloud"))
 
     def _build_pin_tab(self) -> None:
         sp = self._sp
         tab, layout, _outer = self._tab_widget()
 
-        title = QLabel(_('prof_login.pin_title'))
-        title.setProperty('class', 'section-title')
+        title = QLabel(_("prof_login.pin_title"))
+        title.setProperty("class", "section-title")
         layout.addWidget(title)
 
         self._edt_p_email = QLineEdit()
-        self._edt_p_email.setPlaceholderText(_('login.email_placeholder'))
+        self._edt_p_email.setPlaceholderText(_("login.email_placeholder"))
         layout.addWidget(self._edt_p_email)
 
         self._edt_p_pin = QLineEdit()
         self._edt_p_pin.setEchoMode(QLineEdit.Password)
-        self._edt_p_pin.setPlaceholderText(_('prof_login.pin_placeholder'))
+        self._edt_p_pin.setPlaceholderText(_("prof_login.pin_placeholder"))
         self._edt_p_pin.setMaxLength(8)
         layout.addWidget(self._edt_p_pin)
 
-        note = QLabel(_('prof_login.pin_note'))
-        note.setProperty('class', 'info-text')
+        note = QLabel(_("prof_login.pin_note"))
+        note.setProperty("class", "info-text")
         layout.addWidget(note)
 
         btn_row = QHBoxLayout()
         btn_row.setSpacing(sp(SpacingToken.SM))
 
-        self._btn_pin = QPushButton(_('prof_login.connect_pin'))
-        self._btn_pin.setProperty('class', 'btn-pin')
+        self._btn_pin = QPushButton(_("prof_login.connect_pin"))
+        self._btn_pin.setProperty("class", "btn-pin")
         self._btn_pin.clicked.connect(self._on_pin)
         self._edt_p_pin.returnPressed.connect(self._btn_pin.click)
         btn_row.addWidget(self._btn_pin, 1)
 
-        self._btn_change_pin = QPushButton(_('prof_login.change_pin'))
-        self._btn_change_pin.setProperty('class', 'btn-secondary')
+        self._btn_change_pin = QPushButton(_("prof_login.change_pin"))
+        self._btn_change_pin.setProperty("class", "btn-secondary")
         self._btn_change_pin.clicked.connect(self._on_change_pin)
         btn_row.addWidget(self._btn_change_pin)
 
         layout.addLayout(btn_row)
         layout.addStretch()
-        self._tabs.addTab(tab, _('prof_login.tab_pin'))
+        self._tabs.addTab(tab, _("prof_login.tab_pin"))
 
     def _build_new_tab(self) -> None:
         sp = self._sp
         tab, layout, _outer = self._tab_widget()
 
-        title = QLabel(_('prof_login.new_title'))
-        title.setProperty('class', 'section-title')
+        title = QLabel(_("prof_login.new_title"))
+        title.setProperty("class", "section-title")
         layout.addWidget(title)
 
-        info = QLabel(_('prof_login.new_info'))
-        info.setProperty('class', 'info-text')
+        info = QLabel(_("prof_login.new_info"))
+        info.setProperty("class", "info-text")
         info.setWordWrap(True)
         layout.addWidget(info)
 
         self._edt_n_email = QLineEdit()
-        self._edt_n_email.setPlaceholderText(_('login.email_placeholder'))
+        self._edt_n_email.setPlaceholderText(_("login.email_placeholder"))
         layout.addWidget(self._edt_n_email)
 
         dest_row = QHBoxLayout()
         dest_row.setSpacing(sp(SpacingToken.XS))
         self._edt_n_dest = QLineEdit()
-        self._edt_n_dest.setPlaceholderText(_('prof_login.new_dest'))
+        self._edt_n_dest.setPlaceholderText(_("prof_login.new_dest"))
         self._edt_n_dest.setReadOnly(True)
         dest_row.addWidget(self._edt_n_dest)
-        btn_browse = QPushButton('…')
-        btn_browse.setProperty('class', 'btn-browse')
+        btn_browse = QPushButton("…")
+        btn_browse.setProperty("class", "btn-browse")
         btn_browse.clicked.connect(self._browse_dest)
         dest_row.addWidget(btn_browse)
         layout.addLayout(dest_row)
 
-        self._btn_create = QPushButton(_('prof_login.create_instance'))
-        self._btn_create.setProperty('class', 'btn-create')
+        self._btn_create = QPushButton(_("prof_login.create_instance"))
+        self._btn_create.setProperty("class", "btn-create")
         self._btn_create.clicked.connect(self._on_create)
         layout.addWidget(self._btn_create)
 
         layout.addStretch()
-        self._tabs.addTab(tab, _('prof_login.tab_new'))
+        self._tabs.addTab(tab, _("prof_login.tab_new"))
 
     # ------------------------------------------------------------------
     # Network detection (inchangé)
     # ------------------------------------------------------------------
     def _start_net_detection(self) -> None:
-        worker = _Worker(lambda: (True, *detect_network(), ''), parent=self)
+        worker = _Worker(lambda: (True, *detect_network(), ""), parent=self)
         worker.done.connect(self._on_net_detected)
         worker.start()
 
@@ -483,7 +516,7 @@ class LoginWindow(QMainWindow):
         super().showEvent(event)
         self._network_timer.start()
         intra_ok, internet_ok = detect_network()
-        self._on_net_detected((True, intra_ok, internet_ok, ''))
+        self._on_net_detected((True, intra_ok, internet_ok, ""))
         self._check_network()
         self._update_indicators(intra_ok, internet_ok)
         try:
@@ -500,7 +533,7 @@ class LoginWindow(QMainWindow):
         self._network_timer.stop()
 
     def _check_network(self) -> None:
-        worker = _Worker(lambda: (True, *detect_network(), ''), parent=self)
+        worker = _Worker(lambda: (True, *detect_network(), ""), parent=self)
         worker.done.connect(self._on_net_detected)
         worker.start()
 
@@ -518,51 +551,59 @@ class LoginWindow(QMainWindow):
             mode = NetworkMode.OFFLINE
         self._net_mode = mode
         color = network_mode_color(mode)
-        self._dot_lbl.setStyleSheet(f'color: {color}; font-size: {theme_manager.font_size(14)}px;')
+        self._dot_lbl.setStyleSheet(f"color: {color}; font-size: {theme_manager.font_size(14)}px;")
         labels = {
-            NetworkMode.INTRANET: _('login.status.intranet').replace(' ●', ''),
-            NetworkMode.INTERNET: _('prof_login.status.internet'),
-            NetworkMode.OFFLINE: _('prof_login.status.offline'),
+            NetworkMode.INTRANET: _("login.status.intranet").replace(" ●", ""),
+            NetworkMode.INTERNET: _("prof_login.status.internet"),
+            NetworkMode.OFFLINE: _("prof_login.status.offline"),
         }
-        self._net_txt.setText(labels.get(mode, ''))
+        self._net_txt.setText(labels.get(mode, ""))
         self._update_indicators(intra_ok, internet_ok)
         from common.session import session
+
         if session.is_authenticated:
             self._update_status_bar(
                 AuthResult(
-                    user_id=session.user_id, email=session.email,
-                    full_name=session.full_name, role=session.role,
-                    term_id=session.active_term_id, term_label=session.active_term_label
+                    user_id=session.user_id,
+                    email=session.email,
+                    full_name=session.full_name,
+                    role=session.role,
+                    term_id=session.active_term_id,
+                    term_label=session.active_term_label,
                 ),
-                session.conn_mode
+                session.conn_mode,
             )
         else:
             self._update_status_bar(
-                AuthResult(user_id=0, email='', full_name='', role=UserRole.PROF, term_id=0, term_label=''),
-                ConnMode.OFFLINE
+                AuthResult(
+                    user_id=0, email="", full_name="", role=UserRole.PROF, term_id=0, term_label=""
+                ),
+                ConnMode.OFFLINE,
             )
 
     def _update_indicators(self, intranet: bool, cloud: bool) -> None:
         p = theme_manager.theme.palette
-        on_color, off_color = '#27ae60', p.text_soft
+        on_color, off_color = "#27ae60", p.text_soft
         self._intra_indicator.setStyleSheet(
-            f'color: {on_color if intranet else off_color}; '
-            f'font-size: {theme_manager.font_size(11)}px;'
-            f'font-weight: {"bold" if intranet else "normal"};'
+            f"color: {on_color if intranet else off_color}; "
+            f"font-size: {theme_manager.font_size(11)}px;"
+            f"font-weight: {'bold' if intranet else 'normal'};"
         )
         self._cloud_indicator.setStyleSheet(
-            f'color: {on_color if cloud else off_color}; '
-            f'font-size: {theme_manager.font_size(11)}px;'
-            f'font-weight: {"bold" if cloud else "normal"};'
+            f"color: {on_color if cloud else off_color}; "
+            f"font-size: {theme_manager.font_size(11)}px;"
+            f"font-weight: {'bold' if cloud else 'normal'};"
         )
 
     def _on_change_password(self) -> None:
         from views.password import ChangePasswordDialog
+
         dlg = ChangePasswordDialog(self)
         dlg.exec()
 
     def _on_change_pin(self) -> None:
         from views.password import ChangePinDialog
+
         dlg = ChangePinDialog(self)
         dlg.exec()
 
@@ -573,7 +614,7 @@ class LoginWindow(QMainWindow):
         email = self._edt_i_email.text().strip()
         pwd = self._edt_i_pass.text()
         if not email or not pwd:
-            self._show_error(_('login.error.required'))
+            self._show_error(_("login.error.required"))
             return
         if not self._check_email_module(email):
             return
@@ -599,7 +640,11 @@ class LoginWindow(QMainWindow):
     @staticmethod
     def _connect_then_auth_cloud():
         if not db.connect_cloud():
-            return (False, AuthResult(), "Connexion au cloud impossible (vérifier l'accès internet).")
+            return (
+                False,
+                AuthResult(),
+                "Connexion au cloud impossible (vérifier l'accès internet).",
+            )
         return OAuth2Manager.authenticate()
 
     def _check_email_module(self, email: str) -> bool:
@@ -607,7 +652,7 @@ class LoginWindow(QMainWindow):
             conn = db.local_conn
             if conn is None:
                 self._show_error(
-                    'Aucune base locale. Créez d\'abord une instance '
+                    "Aucune base locale. Créez d'abord une instance "
                     'via l\'onglet "Nouvelle instance" ou le mode 4.'
                 )
                 return False
@@ -616,19 +661,19 @@ class LoginWindow(QMainWindow):
             row = cur.fetchone()
             if not row or not row[0]:
                 self._show_error(
-                    'Module non instancié. Créez d\'abord une instance '
+                    "Module non instancié. Créez d'abord une instance "
                     'via l\'onglet "Nouvelle instance" ou le mode 4.'
                 )
                 return False
             if row[0].lower() != email.lower():
                 self._show_error(
-                    f'Cette instance est liée à {row[0]}. '
-                    f'Connectez-vous avec ce compte ou créez votre propre instance.'
+                    f"Cette instance est liée à {row[0]}. "
+                    f"Connectez-vous avec ce compte ou créez votre propre instance."
                 )
                 return False
         except Exception:
             self._show_error(
-                'Erreur de lecture du module. Créez une nouvelle instance '
+                "Erreur de lecture du module. Créez une nouvelle instance "
                 'via l\'onglet "Nouvelle instance" ou le mode 4.'
             )
             return False
@@ -638,10 +683,10 @@ class LoginWindow(QMainWindow):
         email = self._edt_p_email.text().strip()
         pin = self._edt_p_pin.text()
         if not email or not pin:
-            self._show_error('Veuillez saisir votre email et votre PIN.')
+            self._show_error("Veuillez saisir votre email et votre PIN.")
             return
         if not sqlite_init.init():
-            self._show_error('Impossible d\'initialiser la base locale.')
+            self._show_error("Impossible d'initialiser la base locale.")
             return
         if not self._check_email_module(email):
             return
@@ -655,27 +700,27 @@ class LoginWindow(QMainWindow):
         self._set_busy(False)
         ok, res, err = result
         if not ok:
-            self._show_error(err or _('login.error.auth_failed'))
+            self._show_error(err or _("login.error.auth_failed"))
             return
 
         if mode in (ConnMode.INTRANET, ConnMode.CLOUD):
             exists, infos = AuthManager.check_teacher_exists(res.email)
             if not exists:
-                self._show_error('Ce compte n\'est pas un professeur actif.')
+                self._show_error("Ce compte n'est pas un professeur actif.")
                 return
-            res.user_id = infos['user_id']
+            res.user_id = infos["user_id"]
             res.full_name = f"{infos['first_name']} {infos['last_name']}"
-            res.term_id = infos['trimestre_courant']
-            res.term_label = infos['trimestre_label']
+            res.term_id = infos["trimestre_courant"]
+            res.term_label = infos["trimestre_label"]
 
             if not sqlite_init.init():
-                self._show_error('Impossible d\'initialiser la base locale.')
+                self._show_error("Impossible d'initialiser la base locale.")
                 return
             sqlite_init.init_module_config(
-                annee_scolaire=infos['annee_scolaire'],
-                trimestre_courant=infos['trimestre_courant'],
+                annee_scolaire=infos["annee_scolaire"],
+                trimestre_courant=infos["trimestre_courant"],
                 nom_professeur=res.full_name,
-                email_professeur=res.email
+                email_professeur=res.email,
             )
             self._apply_session(res, mode)
             return
@@ -683,45 +728,45 @@ class LoginWindow(QMainWindow):
         if mode == ConnMode.OFFLINE and db.server_conn is not None:
             exists, infos = AuthManager.check_teacher_exists(res.email)
             if not exists:
-                self._show_error('Ce compte n\'est pas un professeur actif.')
+                self._show_error("Ce compte n'est pas un professeur actif.")
                 return
-            res.user_id = infos['user_id']
+            res.user_id = infos["user_id"]
             res.full_name = f"{infos['first_name']} {infos['last_name']}"
-            res.term_id = infos['trimestre_courant']
-            res.term_label = infos['trimestre_label']
+            res.term_id = infos["trimestre_courant"]
+            res.term_label = infos["trimestre_label"]
 
             if not sqlite_init.init():
-                self._show_error('Impossible d\'initialiser la base locale.')
+                self._show_error("Impossible d'initialiser la base locale.")
                 return
             sqlite_init.init_module_config(
-                annee_scolaire=infos['annee_scolaire'],
-                trimestre_courant=infos['trimestre_courant'],
+                annee_scolaire=infos["annee_scolaire"],
+                trimestre_courant=infos["trimestre_courant"],
                 nom_professeur=res.full_name,
-                email_professeur=res.email
+                email_professeur=res.email,
             )
             self._show_confirmation_dialog(res, mode, infos)
             return
 
         if mode == ConnMode.OFFLINE and db.server_conn is None:
             if not sqlite_init.init():
-                self._show_error('Impossible d\'initialiser la base locale.')
+                self._show_error("Impossible d'initialiser la base locale.")
                 return
             sqlite_init.init_module_config(
-                annee_scolaire='',
+                annee_scolaire="",
                 trimestre_courant=res.term_id,
                 nom_professeur=res.full_name,
-                email_professeur=res.email
+                email_professeur=res.email,
             )
 
         if mode == ConnMode.OFFLINE and db.server_conn is not None:
             if not sqlite_init.init():
-                self._show_error('Impossible d\'initialiser la base locale.')
+                self._show_error("Impossible d'initialiser la base locale.")
                 return
             sqlite_init.init_module_config(
-                annee_scolaire=infos['annee_scolaire'],
-                trimestre_courant=infos['trimestre_courant'],
+                annee_scolaire=infos["annee_scolaire"],
+                trimestre_courant=infos["trimestre_courant"],
                 nom_professeur=res.full_name,
-                email_professeur=res.email
+                email_professeur=res.email,
             )
             self._show_confirmation_dialog(res, mode, infos)
             return
@@ -729,10 +774,10 @@ class LoginWindow(QMainWindow):
         self._apply_session(res, mode)
 
     def _show_confirmation_dialog(self, res: AuthResult, mode: ConnMode, infos: dict) -> None:
-        from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel
+        from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QVBoxLayout
 
         dlg = QDialog(self)
-        dlg.setWindowTitle('Confirmation')
+        dlg.setWindowTitle("Confirmation")
         dlg.setMinimumWidth(377)
         layout = QVBoxLayout(dlg)
 
@@ -758,12 +803,14 @@ class LoginWindow(QMainWindow):
         if dlg is not None:
             dlg.accept()
         self._set_busy(True)
-        self._log('Début du téléchargement des données du professeur…')
-        self._log(f"Infos reçues : user_id={infos.get('user_id')}, trimestre={infos.get('trimestre_courant')}")
+        self._log("Début du téléchargement des données du professeur…")
+        self._log(
+            f"Infos reçues : user_id={infos.get('user_id')}, trimestre={infos.get('trimestre_courant')}"
+        )
         QApplication.processEvents()
 
         if not sqlite_init.init():
-            self._show_error('Impossible d\'initialiser la base locale.')
+            self._show_error("Impossible d'initialiser la base locale.")
             self._set_busy(False)
             return
 
@@ -772,15 +819,13 @@ class LoginWindow(QMainWindow):
         QApplication.processEvents()
 
         try:
-            ok, err_msg = sqlite_init.take_teacher_data(
-                infos, self._log, self._temp_conn, None
-            )
+            ok, err_msg = sqlite_init.take_teacher_data(infos, self._log, self._temp_conn, None)
         except Exception as e:
             self._log(f"Exception dans take_teacher_data : {e}")
             self._show_spinner(False)
             self._set_busy(False)
             self._temp_conn = None
-            self._show_error(f'Erreur lors du téléchargement : {e}')
+            self._show_error(f"Erreur lors du téléchargement : {e}")
             return
 
         self._show_spinner(False)
@@ -789,9 +834,9 @@ class LoginWindow(QMainWindow):
 
         self._log(f"Résultat du téléchargement : ok={ok}, msg={err_msg}")
         if not ok:
-            self._show_error(f'Échec du téléchargement des données du professeur : {err_msg}')
+            self._show_error(f"Échec du téléchargement des données du professeur : {err_msg}")
             return
-        self._log('Téléchargement terminé avec succès.')
+        self._log("Téléchargement terminé avec succès.")
         try:
             conn = db.local_conn
             if conn:
@@ -802,7 +847,9 @@ class LoginWindow(QMainWindow):
                 count_pei = cur.fetchone()[0]
                 cur.execute("SELECT COUNT(*) FROM larcauth_learnerdp_has_termsubjectdp")
                 count_dp = cur.fetchone()[0]
-                self._log(f"Comptes après téléchargement : eval={count_eval}, pei={count_pei}, dp={count_dp}")
+                self._log(
+                    f"Comptes après téléchargement : eval={count_eval}, pei={count_pei}, dp={count_dp}"
+                )
         except Exception as e:
             self._log(f"Erreur lors de la vérification des comptes : {e}")
         self._apply_session(res, mode)
@@ -838,11 +885,11 @@ class LoginWindow(QMainWindow):
         except Exception:
             pass
 
-        skip_pin = (local_email is not None and local_email.lower() == res.email.lower())
+        skip_pin = local_email is not None and local_email.lower() == res.email.lower()
 
         if mode in (ConnMode.INTRANET, ConnMode.CLOUD) and not skip_pin:
             pin, ok = self._ask_pin_setup(res.full_name)
-            sqlite_init.save_session(res, pin if ok else '')
+            sqlite_init.save_session(res, pin if ok else "")
         else:
             sqlite_init.save_session(res)
 
@@ -851,17 +898,19 @@ class LoginWindow(QMainWindow):
 
     def _ask_pin_setup(self, name: str):
         from PySide6.QtWidgets import QInputDialog
+
         return QInputDialog.getText(
-            self, 'PIN hors connexion',
-            f'Définissez un PIN pour {name} (laisser vide pour ignorer) :',
-            QLineEdit.Password
+            self,
+            "PIN hors connexion",
+            f"Définissez un PIN pour {name} (laisser vide pour ignorer) :",
+            QLineEdit.Password,
         )
 
     # ------------------------------------------------------------------
     # New instance (inchangé)
     # ------------------------------------------------------------------
     def _browse_dest(self) -> None:
-        folder = QFileDialog.getExistingDirectory(self, 'Choisir le dossier parent')
+        folder = QFileDialog.getExistingDirectory(self, "Choisir le dossier parent")
         if folder:
             self._edt_n_dest.setText(folder)
 
@@ -870,80 +919,82 @@ class LoginWindow(QMainWindow):
         email = self._edt_n_email.text().strip()
         parent = self._edt_n_dest.text().strip()
         if not email or not parent:
-            self._show_error('Email et dossier de destination requis.')
+            self._show_error("Email et dossier de destination requis.")
             return
 
         if db.server_conn is not None and db.server_mode == DBMode.INTRANET:
             exists, infos = AuthManager.check_teacher_exists(email)
             if not exists:
-                self._show_error('Cet email ne correspond à aucun professeur actif.')
+                self._show_error("Cet email ne correspond à aucun professeur actif.")
                 return
         elif db.server_conn is not None and db.server_mode == DBMode.CLOUD:
             exists, infos = AuthManager.check_teacher_exists(email)
             if not exists:
-                self._show_error('Cet email ne correspond à aucun professeur actif.')
+                self._show_error("Cet email ne correspond à aucun professeur actif.")
                 return
         else:
-            self._log('Tentative de connexion à l\'Intranet…')
+            self._log("Tentative de connexion à l'Intranet…")
             if db.connect_intranet():
                 exists, infos = AuthManager.check_teacher_exists(email)
                 if not exists:
-                    self._show_error('Cet email ne correspond à aucun professeur actif.')
+                    self._show_error("Cet email ne correspond à aucun professeur actif.")
                     return
             else:
-                self._log('Intranet indisponible, tentative de connexion au Cloud…')
+                self._log("Intranet indisponible, tentative de connexion au Cloud…")
                 if db.connect_cloud():
                     exists, infos = AuthManager.check_teacher_exists(email)
                     if not exists:
-                        self._show_error('Cet email ne correspond à aucun professeur actif.')
+                        self._show_error("Cet email ne correspond à aucun professeur actif.")
                         return
                 else:
-                    self._show_error('Aucune connexion serveur disponible (Intranet ni Cloud). '
-                                     'La création d\'instance est impossible.')
+                    self._show_error(
+                        "Aucune connexion serveur disponible (Intranet ni Cloud). "
+                        "La création d'instance est impossible."
+                    )
                     return
 
         if db.server_mode == DBMode.INTRANET:
             from PySide6.QtWidgets import QInputDialog, QLineEdit
+
             pwd, ok = QInputDialog.getText(
-                self, 'Mot de passe',
-                f'Veuillez saisir le mot de passe pour {email} :',
-                QLineEdit.Password
+                self,
+                "Mot de passe",
+                f"Veuillez saisir le mot de passe pour {email} :",
+                QLineEdit.Password,
             )
             if not ok or not pwd:
-                self._show_error('Mot de passe requis pour créer l\'instance.')
+                self._show_error("Mot de passe requis pour créer l'instance.")
                 return
 
             auth_ok, _ignored, err = AuthManager.auth_intranet(email, pwd)
             if not auth_ok:
-                self._show_error(f'Mot de passe incorrect : {err}')
+                self._show_error(f"Mot de passe incorrect : {err}")
                 return
 
         elif db.server_mode == DBMode.CLOUD:
-            self._log('Lancement de l\'authentification OAuth2 Google…')
+            self._log("Lancement de l'authentification OAuth2 Google…")
             auth_ok, res, err = OAuth2Manager.authenticate()
             if not auth_ok:
-                self._show_error(f'Authentification Cloud échouée : {err}')
+                self._show_error(f"Authentification Cloud échouée : {err}")
                 return
             if res.email.lower() != email.lower():
-                self._show_error('L\'email du compte Google ne correspond pas à l\'email saisi.')
+                self._show_error("L'email du compte Google ne correspond pas à l'email saisi.")
                 return
         else:
-            self._show_error('Mode de connexion inconnu.')
+            self._show_error("Mode de connexion inconnu.")
             return
 
-        slug = email.split('@')[0].replace('.', '_')
-        dest = os.path.normpath(os.path.join(parent, f'eLarcProf_{slug}'))
+        slug = email.split("@")[0].replace(".", "_")
+        dest = os.path.normpath(os.path.join(parent, f"eLarcProf_{slug}"))
         try:
-            self._show_progress('Création du dossier de destination…')
+            self._show_progress("Création du dossier de destination…")
             os.makedirs(dest, exist_ok=True)
             self._log(f"Dossier créé : {dest}")
 
-            src = os.path.normpath(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-            )
-            self._show_progress('Copie des fichiers du projet…')
+            src = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+            self._show_progress("Copie des fichiers du projet…")
             for item in os.listdir(src):
-                if item in ('__pycache__', '.git', '.venv'):
+                if item in ("__pycache__", ".git", ".venv"):
                     continue
                 s = os.path.join(src, item)
                 d = os.path.join(dest, item)
@@ -951,10 +1002,12 @@ class LoginWindow(QMainWindow):
                     shutil.copytree(s, d, dirs_exist_ok=True)
                 else:
                     shutil.copy2(s, d)
-            dest_cfg = os.path.join(dest, 'config.ini')
+            dest_cfg = os.path.join(dest, "config.ini")
             if not os.path.exists(dest_cfg):
-                self._log("config.ini introuvable dans la source, création d'un fichier par défaut.")
-                with open(dest_cfg, 'w', encoding='utf-8') as f:
+                self._log(
+                    "config.ini introuvable dans la source, création d'un fichier par défaut."
+                )
+                with open(dest_cfg, "w", encoding="utf-8") as f:
                     f.write("""[IntranetDatabase]
 Host = 127.0.0.1
 Port = 5432
@@ -970,17 +1023,19 @@ User = postgres
 Pass = votre_mot_de_passe_supabase
 """)
                 self._log(f"config.ini par défaut créé : {dest_cfg}")
-            src_db = os.path.normpath(os.path.join(src, 'elarc.db'))
+            src_db = os.path.normpath(os.path.join(src, "elarc.db"))
             if os.path.exists(src_db):
-                shutil.copy2(src_db, os.path.join(dest, 'elarc.db'))
+                shutil.copy2(src_db, os.path.join(dest, "elarc.db"))
                 self._log("elarc.db copié.")
             else:
                 self._log("elarc.db introuvable dans la source.")
             self._log("Copie terminée.")
 
-            dest_db = os.path.join(dest, 'elarc.db')
+            dest_db = os.path.join(dest, "elarc.db")
             if not sqlite_init.init(dest_db):
-                self._show_error('Impossible d\'initialiser la base locale dans le dossier de destination.')
+                self._show_error(
+                    "Impossible d'initialiser la base locale dans le dossier de destination."
+                )
                 return
 
             ok, missing = sqlite_init.verify_tables()
@@ -988,66 +1043,66 @@ Pass = votre_mot_de_passe_supabase
                 self._log(f"ATTENTION : Tables manquantes dans la base locale : {missing}")
 
             sqlite_init.init_module_config(
-                annee_scolaire=infos['annee_scolaire'],
-                trimestre_courant=infos['trimestre_courant'],
+                annee_scolaire=infos["annee_scolaire"],
+                trimestre_courant=infos["trimestre_courant"],
                 nom_professeur=f"{infos['first_name']} {infos['last_name']}",
-                email_professeur=email
+                email_professeur=email,
             )
 
             from common.session import AuthResult, UserRole
+
             res = AuthResult(
-                user_id=infos['user_id'],
+                user_id=infos["user_id"],
                 email=email,
                 full_name=f"{infos['first_name']} {infos['last_name']}",
                 role=UserRole.PROF,
-                term_id=infos['trimestre_courant'],
-                term_label=infos['trimestre_label']
+                term_id=infos["trimestre_courant"],
+                term_label=infos["trimestre_label"],
             )
             sqlite_init.save_session(res)
 
-            self._show_progress('Écriture du fichier instance.ini…')
-            cfg_dest = os.path.join(dest, 'instance.ini')
-            with open(cfg_dest, 'w', encoding='utf-8') as f:
-                f.write(f'[Instance]\nEmail={email}\nCreated=auto\n')
+            self._show_progress("Écriture du fichier instance.ini…")
+            cfg_dest = os.path.join(dest, "instance.ini")
+            with open(cfg_dest, "w", encoding="utf-8") as f:
+                f.write(f"[Instance]\nEmail={email}\nCreated=auto\n")
             self._log(f"instance.ini créé : {cfg_dest}")
 
-            self._show_progress('Création du lanceur lancer.bat…')
-            bat = os.path.join(dest, 'lancer.bat')
-            with open(bat, 'w', encoding='utf-8') as f:
-                f.write(f'@echo off\ncd /d "%~dp0"\npython main.py\npause\n')
+            self._show_progress("Création du lanceur lancer.bat…")
+            bat = os.path.join(dest, "lancer.bat")
+            with open(bat, "w", encoding="utf-8") as f:
+                f.write('@echo off\ncd /d "%~dp0"\npython main.py\npause\n')
             self._log(f"lancer.bat créé : {bat}")
 
-            self._show_progress('Instance créée avec succès.')
+            self._show_progress("Instance créée avec succès.")
             QMessageBox.information(
-                self, 'Instance créée',
-                f'Instance créée dans :\n{dest}\n\nLancez lancer.bat pour démarrer.'
+                self,
+                "Instance créée",
+                f"Instance créée dans :\n{dest}\n\nLancez lancer.bat pour démarrer.",
             )
             self._hide_error()
         except Exception as e:
-            self._show_error(f'Erreur de création : {e}')
+            self._show_error(f"Erreur de création : {e}")
 
     # ------------------------------------------------------------------
     # Helpers (inchangés)
     # ------------------------------------------------------------------
     def _set_busy(self, busy: bool) -> None:
         for btn in (self._btn_intra, self._btn_google, self._btn_pin, self._btn_create):
-            QMetaObject.invokeMethod(
-                btn, "setEnabled", Qt.QueuedConnection, Q_ARG(bool, not busy)
-            )
-        text = 'Connexion en cours' if busy else 'Détection du réseau'
-        QMetaObject.invokeMethod(
-            self._net_txt, "setText", Qt.QueuedConnection, Q_ARG(str, text)
-        )
+            QMetaObject.invokeMethod(btn, "setEnabled", Qt.QueuedConnection, Q_ARG(bool, not busy))
+        text = "Connexion en cours" if busy else "Détection du réseau"
+        QMetaObject.invokeMethod(self._net_txt, "setText", Qt.QueuedConnection, Q_ARG(str, text))
 
     def _show_error(self, msg: str) -> None:
         p = theme_manager.theme.palette
+        QMetaObject.invokeMethod(self._err_lbl, "setText", Qt.QueuedConnection, Q_ARG(str, msg))
         QMetaObject.invokeMethod(
-            self._err_lbl, "setText", Qt.QueuedConnection, Q_ARG(str, msg)
-        )
-        QMetaObject.invokeMethod(
-            self._err_lbl, "setStyleSheet",
+            self._err_lbl,
+            "setStyleSheet",
             Qt.QueuedConnection,
-            Q_ARG(str, f'color: {p.error}; font-size: {theme_manager.font_size(11)}px; font-weight: bold;')
+            Q_ARG(
+                str,
+                f"color: {p.error}; font-size: {theme_manager.font_size(11)}px; font-weight: bold;",
+            ),
         )
         QMetaObject.invokeMethod(self._err_lbl, "show", Qt.QueuedConnection)
 
@@ -1057,28 +1112,29 @@ Pass = votre_mot_de_passe_supabase
         )
         QMetaObject.invokeMethod(self._log_area, "show", Qt.QueuedConnection)
         sb = self._log_area.verticalScrollBar()
-        QMetaObject.invokeMethod(
-            sb, "setValue", Qt.QueuedConnection, Q_ARG(int, sb.maximum())
-        )
+        QMetaObject.invokeMethod(sb, "setValue", Qt.QueuedConnection, Q_ARG(int, sb.maximum()))
 
     def _show_progress(self, msg: str) -> None:
         p = theme_manager.theme.palette
         self._err_lbl.setText(msg)
-        self._err_lbl.setStyleSheet(f'color: {p.text_strong}; font-size: {theme_manager.font_size(11)}px;')
+        self._err_lbl.setStyleSheet(
+            f"color: {p.text_strong}; font-size: {theme_manager.font_size(11)}px;"
+        )
         self._err_lbl.show()
         self._log(msg)
 
     def _show_spinner(self, visible: bool) -> None:
-        if not hasattr(self, '_spinner'):
+        if not hasattr(self, "_spinner"):
             from PySide6.QtWidgets import QProgressBar
+
             self._spinner = QProgressBar()
             self._spinner.setRange(0, 0)
             self._spinner.setFixedHeight(21)
             p = theme_manager.theme.palette
             self._spinner.setStyleSheet(
-                f'QProgressBar {{ border: 1px solid {p.border}; border-radius: 4px; '
-                f'background: {p.surface}; text-align: center; }}'
-                f'QProgressBar::chunk {{ background: {p.primary}; }}'
+                f"QProgressBar {{ border: 1px solid {p.border}; border-radius: 4px; "
+                f"background: {p.surface}; text-align: center; }}"
+                f"QProgressBar::chunk {{ background: {p.primary}; }}"
             )
             layout = self.centralWidget().layout()
             layout.insertWidget(layout.indexOf(self._bottom_indicator), self._spinner)
@@ -1093,17 +1149,21 @@ Pass = votre_mot_de_passe_supabase
             if conn is None:
                 return None
             cur = conn.cursor()
-            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='module_config'")
+            cur.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='module_config'"
+            )
             if not cur.fetchone():
                 return None
-            cur.execute("SELECT nom_professeur, annee_scolaire, trimestre_courant, email_professeur FROM module_config LIMIT 1")
+            cur.execute(
+                "SELECT nom_professeur, annee_scolaire, trimestre_courant, email_professeur FROM module_config LIMIT 1"
+            )
             row = cur.fetchone()
             if row and row[0]:
                 return {
-                    'nom_professeur': row[0],
-                    'annee_scolaire': row[1],
-                    'trimestre_courant': row[2],
-                    'email_professeur': row[3] if len(row) > 3 else ''
+                    "nom_professeur": row[0],
+                    "annee_scolaire": row[1],
+                    "trimestre_courant": row[2],
+                    "email_professeur": row[3] if len(row) > 3 else "",
                 }
         except Exception as e:
             self._log(f"Erreur dans _get_module_config : {e}")
@@ -1113,18 +1173,25 @@ Pass = votre_mot_de_passe_supabase
         try:
             conn = db.local_conn
             if conn is None:
-                return {'date_creation_module': '', 'derniere_synchronisation': ''}
+                return {"date_creation_module": "", "derniere_synchronisation": ""}
             cur = conn.cursor()
-            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='module_config'")
+            cur.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='module_config'"
+            )
             if not cur.fetchone():
-                return {'date_creation_module': '', 'derniere_synchronisation': ''}
-            cur.execute("SELECT date_creation_module, derniere_synchronisation FROM module_config LIMIT 1")
+                return {"date_creation_module": "", "derniere_synchronisation": ""}
+            cur.execute(
+                "SELECT date_creation_module, derniere_synchronisation FROM module_config LIMIT 1"
+            )
             row = cur.fetchone()
             if row:
-                return {'date_creation_module': row[0] or '', 'derniere_synchronisation': row[1] or ''}
+                return {
+                    "date_creation_module": row[0] or "",
+                    "derniere_synchronisation": row[1] or "",
+                }
         except Exception as e:
             self._log(f"Erreur dans _get_module_config_dates : {e}")
-        return {'date_creation_module': '', 'derniere_synchronisation': ''}
+        return {"date_creation_module": "", "derniere_synchronisation": ""}
 
     def _update_status_bar_from_module_config(self) -> None:
         try:
@@ -1133,13 +1200,20 @@ Pass = votre_mot_de_passe_supabase
                 return
             config = self._get_module_config()
             if config:
-                prof_name = config['nom_professeur']
+                prof_name = config["nom_professeur"]
                 from common.session import session
+
                 mode = session.conn_mode if session.is_authenticated else ConnMode.OFFLINE
                 self._update_status_bar(
-                    AuthResult(user_id=0, email='', full_name=prof_name, role=UserRole.PROF,
-                               term_id=config['trimestre_courant'], term_label=''),
-                    mode
+                    AuthResult(
+                        user_id=0,
+                        email="",
+                        full_name=prof_name,
+                        role=UserRole.PROF,
+                        term_id=config["trimestre_courant"],
+                        term_label="",
+                    ),
+                    mode,
                 )
             else:
                 self._bottom_indicator.setText("Module LarcProf non instanciée")
@@ -1150,7 +1224,7 @@ Pass = votre_mot_de_passe_supabase
     def _update_status_bar(self, res: AuthResult, mode: ConnMode) -> None:
         sp = self._sp
         p = theme_manager.theme.palette
-        prof_name = res.full_name or (self._get_module_config() or {}).get('nom_professeur', '')
+        prof_name = res.full_name or (self._get_module_config() or {}).get("nom_professeur", "")
 
         if mode == ConnMode.INTRANET:
             title = f"Module de {prof_name} : Connecté à l'Intranet"
@@ -1167,12 +1241,13 @@ Pass = votre_mot_de_passe_supabase
 
         self._bottom_indicator.setText(title)
         self._bottom_indicator.setStyleSheet(
-            f'color: {color}; font-size: {theme_manager.font_size(13)}px; font-weight: bold;'
-            f'padding: {sp(SpacingToken.SM)}px {sp(SpacingToken.MD)}px;'
+            f"color: {color}; font-size: {theme_manager.font_size(13)}px; font-weight: bold;"
+            f"padding: {sp(SpacingToken.SM)}px {sp(SpacingToken.MD)}px;"
         )
 
     def _open_main_window(self, res: AuthResult) -> None:
         from views.home_window import HomeWindow
+
         self._main_window = HomeWindow(parent=self)
         self._main_window.show()
         self.hide()
