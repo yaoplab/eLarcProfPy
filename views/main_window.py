@@ -628,6 +628,8 @@ class MainWindow(QMainWindow):
         self._grille.horizontalHeader().sectionClicked.connect(self._on_header_section_clicked)
         self._grille.setItemDelegate(ColorDelegate())
 
+        self._grille.cellChanged.connect(self._on_cell_changed)
+
         h.addWidget(self._grille, 1)
 
         return container
@@ -1406,15 +1408,9 @@ class MainWindow(QMainWindow):
                 else:
                     self._grille.setColumnWidth(ci, pei_config.note_width)
 
-        try:
-            self._grille.cellChanged.disconnect(self._on_cell_changed)
-        except Exception:
-            pass
-        # Stocker pour la sauvegarde (sans colonne élève)
         self._current_table = table
         self._current_col_names = existing_visible
         self._current_student_ids = [e['id'] for e in eleves]
-        self._grille.cellChanged.connect(self._on_cell_changed)
         # Largeur colonnes notes (décalage de 1 pour la colonne élève)
         if pei_config:
             self._grille.setColumnWidth(0, pei_config.student_width)
