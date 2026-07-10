@@ -1038,6 +1038,12 @@ Pass = votre_mot_de_passe_supabase
                 )
                 return
 
+            self._show_progress("Téléchargement des données professeur...")
+            QApplication.processEvents()
+            ok_ttd, err_ttd = sqlite_init.take_teacher_data(infos, self._log, db.local_conn, None)
+            if not ok_ttd:
+                self._log(f"take_teacher_data: {err_ttd}")
+
             ok, missing = sqlite_init.verify_tables()
             if not ok:
                 self._log(f"ATTENTION : Tables manquantes dans la base locale : {missing}")
