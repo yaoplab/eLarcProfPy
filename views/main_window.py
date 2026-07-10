@@ -948,7 +948,7 @@ class MainWindow(QMainWindow):
             if len(nature_txt) > 22:
                 nature_txt = nature_txt[:20] + '…'
             lbl_nature = QLabel(nature_txt)
-            lbl_nature.setFixedWidth(89)
+            lbl_nature.setFixedWidth(178)
             lbl_nature.setFont(theme_manager.font(theme_manager.theme.fonts.small))
             lbl_nature.setStyleSheet(f"color: {theme_manager.theme.palette.text_soft}; border: none;")
             rh.addWidget(lbl_nature)
