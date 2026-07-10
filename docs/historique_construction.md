@@ -1252,3 +1252,72 @@ lycee_bulletin     ← Professeur principal DP (SQLite)
 | `../LarcSuperviseur/AGENTS.md` | +eLarcProfPy section complète |
 | `docs/etat_projet.md` | Mis à jour |
 | `docs/historique_construction.md` | Itération 21 |
+
+---
+
+## Itération 22 — Gradient, sauvegarde, init, sync (10/07/2026)
+
+### Objectif
+Corriger l'affichage des notes (couleurs, padding, centrage), la sauvegarde locale (nom de colonne), l'initialisation de base (take_teacher_data absent), et les performances sync.
+
+### Réalisé
+
+#### 1. Gradient pastel des notes
+- **ColorItem** : sous-classe de QTableWidgetItem avec `_bg` et surcharge `data(UserRole+3)`
+- **ColorDelegate** : delegate custom qui peint fond + texte centré (contourne le thème Windows natif qui ignore setBackground)
+- Couleurs : rouge(0) → blanc(milieu) → vert(max), interpolées
+- Recalcul immédiat dans `_on_cell_changed` via `ColorItem.set_bg()`
+
+#### 2. Top bar — nature à la place du doublon label
+- Supprimé `lbl_label` (redondant avec `idx_lbl`) dans `_update_icons`
+- Largeur nature doublée (89→178px)
+- Espace entre nature et critères
+
+#### 3. Filtrage des critères par évaluation
+- `_crit_visible()` vérifie `crit_a/b/c/d` de chaque évaluation dans `larcauth_evaluation`
+- Seules les colonnes des critères activés apparaissent (pas uniquement le toggle global)
+
+#### 4. EditTriggers Excel-like + tri + cellules centrées
+- `SelectedClicked | EditKeyPressed | AnyKeyPressed`
+- `setSortingEnabled(True)` + tri Nom/Prenom toggle
+- `Qt.AlignCenter` partout
+
+#### 5. Sauvegarde locale (nom de colonne)
+- `learner_has_termsubject_ptr_id` accepté en plus de `fk_student_id` dans `_fill_grille`
+- Tables PEI/DP utilisent ce nom de colonne pour le matching élève
+
+#### 6. Boutons adaptatifs online/offline
+- "Synchroniser" quand connecté, "Enregistrer" quand hors ligne
+- Tooltips mis à jour
+
+#### 7. Initialisation base (take_teacher_data)
+- `_on_create` appelait `init()` mais pas `take_teacher_data` → base vide
+- Correction : `take_teacher_data` appelé après `init()`
+
+#### 8. sync_state migration + non-bloquant
+- Migration : recrée `sync_state` si ancien schéma sans `table_name`
+- `_touch_sync_state` rendu non-bloquant (try/except) — ne rollback plus la transaction
+
+#### 9. Performance sync
+- Commit unique par table (plus par cellule)
+- Log verbeux retiré d'`apply_pull`
+- Traces timing `[SYNC]` par table pour diagnostic
+
+#### 10. Divers
+- Fenêtre maximisée au lancement (`showMaximized`)
+- `QStatusBar` import corrigé
+- `disconnect` warning corrigé (connect une seule fois)
+- Traces `[INIT]` dans sqlite_init
+- Audit padding/margin documenté dans AGENTS.md
+
+### Fichiers modifiés
+
+| Fichier | Action |
+|---|---|
+| `views/main_window.py` | Gradient, ColorItem, ColorDelegate, tri, centrage, save fix, boutons adaptatifs, disconnect fix, showMaximized |
+| `views/home_window.py` | showMaximized |
+| `views/login.py` | take_teacher_data dans _on_create |
+| `common/sync.py` | Commit unique par table, retrait log verbeux, traces timing |
+| `common/sqlite_init.py` | Migration sync_state, _touch_sync_state non-bloquant, traces [INIT] |
+| `../LarcSuperviseur/AGENTS.md` | Mise à jour 10/07/2026 |
+| `docs/historique_construction.md` | Itération 22 |
