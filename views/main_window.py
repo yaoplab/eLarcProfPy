@@ -943,20 +943,10 @@ class MainWindow(QMainWindow):
             idx_lbl.setStyleSheet(f"color: {theme_manager.theme.palette.text_strong}; border: none;")
             rh.addWidget(idx_lbl)
 
-            # Label (tronqué)
-            label_txt = (e.get('label') or '—')
-            if len(label_txt) > 22:
-                label_txt = label_txt[:20] + '…'
-            lbl_label = QLabel(label_txt)
-            lbl_label.setFixedWidth(89)
-            lbl_label.setFont(theme_manager.font(theme_manager.theme.fonts.small))
-            lbl_label.setStyleSheet(f"color: {theme_manager.theme.palette.text_strong}; border: none;")
-            rh.addWidget(lbl_label)
-
-            # Nature (tronqué)
+            # Nature (le label DB est redondant avec idx_lbl, on remplace par nature)
             nature_txt = (e.get('nature') or '')
-            if len(nature_txt) > 16:
-                nature_txt = nature_txt[:14] + '…'
+            if len(nature_txt) > 22:
+                nature_txt = nature_txt[:20] + '…'
             lbl_nature = QLabel(nature_txt)
             lbl_nature.setFixedWidth(89)
             lbl_nature.setFont(theme_manager.font(theme_manager.theme.fonts.small))
