@@ -953,6 +953,9 @@ class MainWindow(QMainWindow):
             lbl_nature.setStyleSheet(f"color: {theme_manager.theme.palette.text_soft}; border: none;")
             rh.addWidget(lbl_nature)
 
+            if e.get('nature', ''):
+                rh.addSpacing(8)
+
             # Critères actifs uniquement
             active_crits = [l.upper() for l in ('a','b','c','d') if e.get(f'crit_{l}', '0') == '1']
             crits_txt = ' '.join(active_crits) if active_crits else ''
